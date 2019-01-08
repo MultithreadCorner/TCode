@@ -17,4 +17,4 @@ IN PREPARATION
 TCode was created by [Andrea Contu](https://github.com/acontu) and [Angelo Loi](https://github.com/angeloloi19).
 
 ## Acknowledgement
-TCode was developed within the Timespot collaboration, supported by the [Instituto Nazionale di Fisica Nucleare (INFN)](http://home.infn.it/en/).
+TCode was developed within the TIMESPOT collaboration, supported by the [Instituto Nazionale di Fisica Nucleare (INFN)](http://home.infn.it/en/) and by the [Università degli Studi di Cagliari](https://www.unica.it/unica/).
