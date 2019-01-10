@@ -1,7 +1,7 @@
 Build application
 -------------------------------
 Make sure that you have the following packages available in your system:
-- [Hydra >= v2.2.1](https://github.com/MultithreadCorner/Hydra/releases/tag/v2.2.1)
+- [Hydra >= v2.3.1](https://github.com/MultithreadCorner/Hydra/releases/tag/v2.3.1)
 - [libconfig >= v1.5](https://github.com/hyperrealm/libconfig)
 - [TCLAP >= v1.2.1](http://tclap.sourceforge.net/)
 - [ROOT >= v6.14](https://root.cern.ch/)
