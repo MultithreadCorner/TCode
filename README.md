@@ -8,7 +8,7 @@ TCode is still in its alpha version and the repository it is taking shape, for t
 TCode uses external 3D maps of electric fields, carrier mobilities and weighting field and energy deposit to simulate the response in current of solid state sensors. The motion of the individual carriers produced in the initial deposit is determined using a 4th other Runge-Kutta using the electric field and the mobilities and assuming that the carriers always move at drift velocity. At each time interval the current induced in the electrod is calculated from the carriers velocity using the corresponding weighting field, according to the [Shockley](https://aip.scitation.org/doi/10.1063/1.1710367)-[Ramo](https://ieeexplore.ieee.org/document/1686997) theorem. The output is stored to ROOT files, several level of output detail are available, from the simple current vs time plot to the complete information about the position of the carriers at each time step.
 
 ## Dependencies
-TCode depends on [ROOT >= v.6.14](https://github.com/root-project/root), [libconfig >= v1.5](https://hyperrealm.github.io/libconfig/) and [TCLAP >= v1.2.1](http://tclap.sourceforge.net/).
+TCode depends on [ROOT >= v.6.14](https://github.com/root-project/root), [libconfig >= v1.5](https://hyperrealm.github.io/libconfig/), [TCLAP >= v1.2.1](http://tclap.sourceforge.net/) and optionally  [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) (needed for nVidia GPUs).
 
 ## Manual
 IN PREPARATION
