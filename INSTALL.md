@@ -6,7 +6,7 @@ Make sure that you have the following packages available in your system:
 - [TCLAP >= v1.2.1](http://tclap.sourceforge.net/)
 - [ROOT >= v6.14](https://root.cern.ch/)
 
-To generate executables to run on nVidia GPUs you also need an installation of [CUDA >= 8.1](https://developer.nvidia.com/cuda-toolkit) and to use a [compatible GCC version](https://docs.nvidia.com/cuda/).
+To generate executables to run on nVidia GPUs you also need an installation of [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) and to use a [compatible GCC version](https://docs.nvidia.com/cuda/).
 
 Build TCode following the instructions below:
 1. clone the git repository: `git clone https://github.com/MultithreadCorner/TCode.git`
