@@ -16,4 +16,4 @@ Build TCode following the instructions below:
 5. run cmake specifying the path to Hydra: `cmake -DHYDRA_INCLUDE_DIR='path-to-hydra'../`
 6. compile (all backends): `make -j8`
 
-Several executables, separate for each available backend (CPP, TBB, OMP and CUDA) will be generated.
+Several executables, separate for each available backend (CPP, TBB, OMP and CUDA) will be generated in the build directory.
