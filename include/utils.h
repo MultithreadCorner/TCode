@@ -365,7 +365,7 @@ void printProgress (double percentage, std::string text){
 //header
 void printHeader(){
     std::cout << TOPROW << std::endl;
-    std::cout << "                 Welcome to "<<PROJECT_NAME<<", a fast silicon sensor simulation for TIMESPOT               " << std::endl;
+    std::cout << "                 Welcome to "<<PROJECT_NAME<< " "<< VERSION <<", a fast silicon sensor simulation               " << std::endl;
     std::cout << MIDDLEROW << std::endl;
     std::cout << "     Developed by Andrea Contu (andrea.contu@ca.infn.it) and Angelo Loi (angelo.loi@ca.infn.it)     " << std::endl;
 //    std::cout << MIDDLEROW << std::endl;

@@ -156,13 +156,13 @@ void setstyle(){// all users - please change the name of this file to lhcbStyle.
   gROOT->SetStyle("plotStyle");
   gROOT->ForceStyle();
 
-  // add TIMESPOT label
+  // add project label
   TPaveText* plotName = new TPaveText(gStyle->GetPadLeftMargin() + 0.05,
                                       0.87 - gStyle->GetPadTopMargin(),
                                       gStyle->GetPadLeftMargin() + 0.20,
                                       0.95 - gStyle->GetPadTopMargin(),
                                       "BRNDC");
-  plotName->AddText("TIMESPOT");
+  plotName->AddText(PROJECT_NAME);
   plotName->SetFillColor(0);
   plotName->SetTextAlign(12);
   plotName->SetBorderSize(0);

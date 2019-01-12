@@ -27,7 +27,7 @@
 
 //project name
 #define PROJECT_NAME "TCoDe"
-#define VERSION "1.0"
+#define VERSION "0.1-alpha"
 #define DEFAULT_FILE_NAME "none"
 
 //map code settings

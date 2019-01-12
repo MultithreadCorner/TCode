@@ -273,8 +273,8 @@ namespace analysis{
         
         INFO_LINE("Max Current: "<<currmax<<" A")
         INFO_LINE("Int Charge: "<<t_tinduced<<" C")
-        INFO_LINE("Int Charge e: "<<t_einduced<<" C")
-        INFO_LINE("Int Charge h: "<<t_hinduced<<" C")
+//         INFO_LINE("Int Charge e: "<<t_einduced<<" C")
+//         INFO_LINE("Int Charge h: "<<t_hinduced<<" C")
         TH1D *hcurr=new TH1D("h1curr",";time [ps]; Current [A]",1,0,(timestep)/UTIME * tp_currs.size());
         hcurr->GetYaxis()->SetTitleOffset(0.9);
         hcurr->SetMaximum(currmax*1.1);
@@ -350,6 +350,17 @@ namespace analysis{
             
         }
         settingstext->Draw();
+        // add TIMESPOT label
+        TPaveText* plotName = new TPaveText(gStyle->GetPadLeftMargin() + 0.05,
+                                            0.87 - gStyle->GetPadTopMargin(),
+                                            gStyle->GetPadLeftMargin() + 0.30,
+                                            0.94 - gStyle->GetPadTopMargin(),
+                                            "BRNDC");
+        plotName->AddText(((std::string)PROJECT_NAME+(std::string)" Simulation").c_str());
+        plotName->SetFillColor(0);
+        plotName->SetTextAlign(12);
+        plotName->SetBorderSize(0);
+        plotName->Draw();
     //     cancurr->SaveAs(Form("%s/%s_current.pdf",outputdir.Data(),filename.Data()),"pdf");
         
         outf->WriteTObject(gtc,gtc->GetName(),"Overwrite");
@@ -411,6 +422,7 @@ namespace analysis{
         double chargemin=-0;
         unsigned pl=0;
         
+        
         for(auto& curr:tp_currs){
             
             double ce=hydra::get<1>(curr);
@@ -465,23 +477,29 @@ namespace analysis{
             
             pxy->Scale(1./hdraw->GetZaxis()->GetNbins());
             pxy->SetMinimum(minhist);
+            pxy->SetMaximum(maxhist);
             pyz->Scale(1./hdraw->GetXaxis()->GetNbins());
             pyz->SetMinimum(minhist);
+            pyz->SetMaximum(maxhist);
             pxz->Scale(1./hdraw->GetYaxis()->GetNbins());
             pxz->SetMinimum(minhist);
+            pxz->SetMaximum(maxhist);
             
             
             double xdim=pxy->GetXaxis()->GetXmax()-pxy->GetXaxis()->GetXmin();
             double ydim=pxy->GetYaxis()->GetXmax()-pxy->GetYaxis()->GetXmin();
             double zdim=pxz->GetYaxis()->GetXmax()-pxz->GetYaxis()->GetXmin();
             
-            TCanvas *can= new TCanvas("can","can",2*(xdim+ydim),2*(ydim+zdim)*(1./(1.-sizepadcurrent)));
+            double zoomfactor=300./(xdim+ydim);
+            
+            TCanvas *can= new TCanvas("can","can",zoomfactor*(xdim+ydim),zoomfactor*(ydim+zdim)*(1./(1.-sizepadcurrent)));
             
 
             double vfz=zdim/(ydim+zdim);
             double ofx=xdim/(xdim+ydim);
 
-            TPad *c1=new TPad("c1","xy",0., sizepadcurrent + vfz*(1.-sizepadcurrent) , ofx , 1.);
+            TPad *c1=nullptr;
+            c1=new TPad("c1","xy",0., sizepadcurrent + vfz*(1.-sizepadcurrent) , ofx , 1.);
             c1->SetBorderSize(0);
             c1->SetLeftMargin(0.15);
             c1->SetRightMargin(0);
@@ -489,7 +507,8 @@ namespace analysis{
             c1->SetBottomMargin(0);
             c1->Draw();
             can->cd();
-            TPad *c2=new TPad("c2","current",ofx, sizepadcurrent + vfz*(1.-sizepadcurrent), 1., 1.);
+            TPad *c2=nullptr;
+            c2=new TPad("c2","current",ofx, sizepadcurrent + vfz*(1.-sizepadcurrent), 1., 1.);
             c2->SetBorderSize(0);
             c2->SetLeftMargin(0);
             c2->SetRightMargin(0.05);
@@ -497,7 +516,8 @@ namespace analysis{
             c2->SetBottomMargin(0);
             c2->Draw();
             can->cd();
-            TPad *c3=new TPad("c3","xz",0., sizepadcurrent, ofx, sizepadcurrent+vfz*(1-sizepadcurrent));
+            TPad *c3=nullptr;
+            c3=new TPad("c3","xz",0., sizepadcurrent, ofx, sizepadcurrent+vfz*(1-sizepadcurrent));
             c3->SetBorderSize(0);
             c3->SetLeftMargin(0.15);
             c3->SetRightMargin(0);
@@ -505,7 +525,8 @@ namespace analysis{
             c3->SetBottomMargin(0.15);
             c3->Draw();
             can->cd();
-            TPad *c4=new TPad("c4","yz",ofx, sizepadcurrent, 1., sizepadcurrent+vfz*(1-sizepadcurrent));
+            TPad *c4=nullptr;
+            c4=new TPad("c4","yz",ofx, sizepadcurrent, 1., sizepadcurrent+vfz*(1-sizepadcurrent));
             c4->SetBorderSize(0);
             c4->SetLeftMargin(0);
             c4->SetRightMargin(0.05);
@@ -514,7 +535,8 @@ namespace analysis{
             c4->Draw();
             can->cd();
             
-            TPad *c5=new TPad("c5","current",0., 0., 1., sizepadcurrent);
+            TPad *c5=nullptr;
+            c5=new TPad("c5","current",0., 0., 1., sizepadcurrent);
             c5->SetBorderSize(0);
             c5->SetLeftMargin(0.15);
             c5->SetRightMargin(0.05);
@@ -548,19 +570,32 @@ namespace analysis{
             pyz->GetXaxis()->SetTitleOffset(0.36);
             pyz->GetXaxis()->SetLabelOffset(-0.070);
             
+            TPaveText* plotName = new TPaveText(gStyle->GetPadLeftMargin() + 0.05,
+                                            0.87 - gStyle->GetPadTopMargin(),
+                                            gStyle->GetPadLeftMargin() + 0.30,
+                                            0.94 - gStyle->GetPadTopMargin(),
+                                            "BRNDC");
+            plotName->AddText(((std::string)PROJECT_NAME+(std::string)" Simulation").c_str());
+            plotName->SetFillColor(0);
+            plotName->SetTextAlign(12);
+            plotName->SetBorderSize(0);
             
             c1->cd();
             pxy->Draw("col");
+//             plotName->Draw();
             c2->cd();
             leg->Draw();
+            
             c3->cd();
             pxz->Draw("col");
+//             plotName->Draw();
             c4->cd();
             pyz->Draw("col");
-            
+//             plotName->Draw();
             
             c5->cd();
             hcurr->Draw("");
+            plotName->Draw();
             
             pl=0;
             for(auto& final_state:states){

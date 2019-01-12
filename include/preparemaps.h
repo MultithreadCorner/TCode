@@ -304,9 +304,10 @@ namespace maps{
         _extremes.push_back(spacepoint_t(*_gridx.rbegin(),*_gridy.begin(),*_gridz.rbegin()));
         _extremes.push_back(spacepoint_t(*_gridx.rbegin(),*_gridy.rbegin(),*_gridz.rbegin()));
         
-        INFO_LINE("Range in x: [ "<< *_gridx.begin() << " , "<< *_gridx.rbegin() << " ]")
-        INFO_LINE("Range in y: [ "<< *_gridy.begin() << " , "<< *_gridy.rbegin() << " ]")
-        INFO_LINE("Range in z: [ "<< *_gridz.begin() << " , "<< *_gridz.rbegin() << " ]")
+        INFO_LINE("Range in x/y/z [microns]: [ "<< *_gridx.begin() << " , "<< *_gridx.rbegin() << " ]/" 
+                                         << "[ "<< *_gridy.begin() << " , "<< *_gridy.rbegin() << " ]/"
+                                         << "[ "<< *_gridz.begin() << " , "<< *_gridz.rbegin() << " ]")
+        
         
         INFO_LINE("Single entries in x/y/z: " << _gridx.size() << "/" << _gridy.size() << "/" << _gridz.size())
         
