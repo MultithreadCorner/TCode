@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,57 +22,56 @@
  * datatypes.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
 
-//defining particle states at a given time
-#define _tc_charge _0
-#define _tc_x _1
-#define _tc_y _2
-#define _tc_z _3
-#define _tc_isin _4
-#define _tc_curr _5
-#define _tc_gauss_x _6
-#define _tc_gauss_y _7
-#define _tc_gauss_z _8
-#define _tc_angle_1 _9
-#define _tc_angle_2 _10
-#define _tc_issec _11
-#define RSDIM 12
-#define RSHOSTDIM 7
-#define RSINT 8
+#ifndef __DATATYPES_H__
+#define __DATATYPES_H__
 
-typedef hydra::multiarray<double,RSDIM, hydra::host::sys_t > RunningStateHost_t; //for testing
-typedef hydra::multiarray<double,RSDIM, hydra::device::sys_t > RunningState_t;
-typedef hydra::tuple<double,double,double,double,double,double,double,double,double,double,double,double> RunningTuple_t;
+//defining particle states columns
+#define RSDIM 12 // columns in running state
+#define RSHOSTDIM 7 // columns in Universe state
+#define RSINT 8 // entries in currents tuple
+
+//particle states
+using RunningStateHost_t    =   hydra::multiarray<double,RSDIM, hydra::host::sys_t >; //for testing
+using RunningState_t        =   hydra::multiarray<double,RSDIM, hydra::device::sys_t >;
+using RunningTuple_t        =   hydra::tuple<double,double,double,double,double,double,double,double,double,double,double,double>;
+//default initialization
 RunningTuple_t RunningTuple_init(-1, 0., 0., 0., 1.,0.,0.,0.,0.,0.,0.,0.);
 
-typedef hydra::multiarray<double,RSHOSTDIM,  hydra::device::sys_t> StateDev_t; //Particles state in device (e.g. GPU)
-typedef hydra::multiarray<double,RSHOSTDIM,  hydra::host::sys_t> StateHost_t; //Particles state in host
-typedef hydra::tuple<double,double,double,double,double,double,double> StateTuple_t;
+using StateDev_t            =   hydra::multiarray<double,RSHOSTDIM,  hydra::device::sys_t>; //Particles state in device (e.g. GPU)
+using StateHost_t           =   hydra::multiarray<double,RSHOSTDIM,  hydra::host::sys_t>; //Particles state in host
+using StateTuple_t          =   hydra::tuple<double,double,double,double,double,double,double>;
 StateTuple_t StateTuple_init(0.,0.,0.,0.,0.,0.,0.);
 
 
-typedef std::vector<StateDev_t> UniverseDev_t; //All particles in all states, it has to be in the host
-typedef std::vector<StateHost_t> UniverseHost_t; //All particles in all states, it has to be in the host
-typedef hydra::multiarray<double,RSINT,  hydra::device::sys_t> ReducedDataDev_t; //Reduced data container
-typedef hydra::tuple<double,double,double,double,double,double,double,double> ReducedTuple_t;
+using UniverseDev_t         =   std::vector<StateDev_t>; //All particles in all states, it has to be in the host
+using UniverseHost_t        =   std::vector<StateHost_t>; //All particles in all states, it has to be in the host
+using ReducedDataDev_t      =   hydra::multiarray<double,RSINT,  hydra::device::sys_t>; //Reduced data container
+using ReducedTuple_t        =   hydra::tuple<double,double,double,double,double,double,double,double>;
 ReducedTuple_t ReducedTuple_init(0.,0.,0.,0.,0.,0.,0.,0.);
 
-typedef hydra::host::vector<double> VecHost_t; //vector container double
-typedef hydra::device::vector<double> VecDev_t; //vector container double
+template<typename T>
+using VecHost_t             =   hydra::host::vector<T>; //vector container double
+template<typename T>
+using VecDev_t              =   hydra::device::vector<T>; //vector container double
 
+//currents vector
+using CurrentVec_t          =   std::vector<ReducedTuple_t>;
 
+//defining particle state columns meaning
+auto _tc_charge     = hydra::placeholders::_0;
+auto _tc_x          = hydra::placeholders::_1;
+auto _tc_y          = hydra::placeholders::_2;
+auto _tc_z          = hydra::placeholders::_3;
+auto _tc_isin       = hydra::placeholders::_4;
+auto _tc_curr       = hydra::placeholders::_5;
+auto _tc_gauss_x    = hydra::placeholders::_6;
+auto _tc_gauss_y    = hydra::placeholders::_7;
+auto _tc_gauss_z    = hydra::placeholders::_8;
+auto _tc_angle_1    = hydra::placeholders::_9;
+auto _tc_angle_2    = hydra::placeholders::_10;
+auto _tc_issec      = hydra::placeholders::_11;
 
-typedef std::vector<ReducedTuple_t> CurrentVec_t;
-typedef std::array<double, 11> FileLine_t;
-typedef hydra::tuple<double,double,double> hydra_tuple3_t;
-typedef hydra::tuple<double,double,double,double> hydra_tuple4_t;
-typedef hydra::tuple<double,double,double,double,double,double> hydra_tuple6_t;
-typedef hydra::tuple<double,double,double,double,double,double,double> hydra_tuple7_t;
-typedef hydra::tuple<double,double,double,double,double,double,double,double> hydra_tuple8_t;
-typedef hydra::tuple<double,double,double,double,double,double,double,double,double> hydra_tuple9_t;
-typedef hydra::tuple<double,double,double,double,double,double,double,double,double,double> hydra_tuple10_t;
-typedef hydra::tuple<double,double,double,double,double,double,double,double,double,double,double> hydra_tuple11_t;
-typedef hydra::tuple<double,double,double,double,double,double,double,double,double,double,double,double> hydra_tuple12_t;
-
+#endif
