@@ -47,6 +47,13 @@ namespace evolve{
         
     }
     
+    /*
+    review A.A. 
+    why not using std::binary_search (https://en.cppreference.com/w/cpp/algorithm/binary_search) ?
+    if V is too large (O(6) or higher) and it becomes too slow, we can wrapp a vectorized version 
+    in hydra...  
+    */
+    
     //function to get index in one dimension (binary search)
     __hydra_dual__
     inline size_t getindex(double v[], size_t n, double f, size_t first=0){
@@ -106,13 +113,23 @@ namespace evolve{
         ind8[6] = ind[1]-1 +(ind[0])*sy+(ind[2])*fNPXY;
         ind8[7] = ind[1] + (ind[0])*sy+(ind[2])*fNPXY;
     }
+    /*
+    Review A.A.
     
+    ApplyRamo  is  receiving and using pointers without testing the validity. 
+    
+    */
     //calculate currents
     struct ApplyRamo
     {
 
         ApplyRamo()=delete;                                         // avoid creating objects with undefined data
 
+         /*
+         Review A.A.
+    
+         ApplyRamo ctor is  receiving and using pointers without testing the validity. 
+         */
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
         ApplyRamo(size_t n, double timestep, double diffusion, double *in_x, size_t dim_x,double *in_y, size_t dim_y,double *in_z, size_t dim_z, double *in_xef,double *in_yef, double *in_zef, double *in_em, double *in_hm, double *in_xwf,double *in_ywf, double *in_zwf):
         fN(n),
@@ -134,6 +151,7 @@ namespace evolve{
         zvecwf(in_zwf)
         {}
         
+        //
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
         ApplyRamo(size_t n, double timestep, double diffusion, VecDev_t<double> &in_x, VecDev_t<double> &in_y, VecDev_t<double> &in_z, VecDev_t<double> &in_xef, VecDev_t<double> &in_yef, VecDev_t<double> &in_zef, VecDev_t<double> &in_em, VecDev_t<double> &in_hm, VecDev_t<double> &in_xwf, VecDev_t<double> &in_ywf, VecDev_t<double> &in_zwf):
         fN(n),
@@ -205,6 +223,7 @@ namespace evolve{
             return *this;
         }
 
+        // FIXME: is not constant !
         //function call operator needs to be callable in host and device sides 
         // and be constant
         template<typename Particle>
@@ -289,7 +308,8 @@ namespace evolve{
 
         }
         
-        
+        //FIXME: pointers initialized here and in the class ctors. Consider to enable the default ctor.
+        //anyway you never test the pointers for null.
         size_t fN;
         double fStep;
         double fDiff;
@@ -309,11 +329,13 @@ namespace evolve{
         double *zvec   = nullptr;
     };
     
-    
+    //fixme: why not using the iterators instead of raw pointer?
+    // your only ctor is taking vectors ...
     //calculate currents
     struct ApplyRamo_multi
     {
 
+        //fixme: Actually you are anyway initliazing the struct with null-pointers 
         ApplyRamo_multi()=delete;                                         // avoid creating objects with undefined data
         
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
@@ -568,9 +590,10 @@ namespace evolve{
         double *zhmvec   = nullptr;
     };
     
+    //fixme: test pointer validity before to use!
     struct Evolve
     {
-
+       //fixme: Actually you are anyway initliazing the struct with null-pointers 
         Evolve()=delete;                                         // avoid creating objects with undefined data
 
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
