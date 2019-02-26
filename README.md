@@ -1,4 +1,4 @@
-# TCode
+<img src="logo_TCoDe.png" width="300">
 
 ## What is it?
 TCode is a C++14 compliant application to simulate the response of solid state sensors in massively parallel platforms on Linux systems. TCode is implemented on top of [Hydra](https://github.com/MultithreadCorner/Hydra) and as such, it can run on OpenMP, CUDA and TBB compatible devices. 

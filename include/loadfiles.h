@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -32,18 +32,22 @@ using namespace hydra::placeholders;
 
 namespace loaddata{
 
-    RunningStateHost_t getDummy(size_t nparticles, double length){
+    RunningStateHost_t getDummy(size_t nparticles, double length, size_t group=DEFAULT_GROUP){
         INFO_LINE("Generating deposit")
         hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
         size_t np=(nparticles<=0) ? MAXPARTICLES : nparticles;
+
+        if(np==0) ERROR_LINE("Number of particles is zero! Check your configuration.")
         if(np==1){
-            auto data_d1=RunningStateHost_t(np,RunningTuple_t(std::copysign(1.,length),0.,0.,0., 0.,1.,0.,0.,0.,0.,0.,0.));
+            if(group >1 && np/group==0) ERROR_LINE("Number of particles (or bunches of particles) is zero! Check your configuration.")
+            auto data_d1=RunningStateHost_t(np,RunningTuple_t(std::copysign(1.,length)*group,0.,0.,0., 1.,0.,0.,0.,0.,0.,0.,0.));
             return data_d1;
         }
         size_t halfsize=np/2;
+        if(group>1) halfsize/=group;
         RunningStateHost_t data_d(halfsize*2);
-        auto data_de=RunningStateHost_t(halfsize,RunningTuple_t(-1.,0.,0.,0., 1.,0.,0.,0.,0.,0.,0.,0.));
-        auto data_dh=RunningStateHost_t(halfsize,RunningTuple_t(1.,0.,0.,0., 1.,0.,0.,0.,0.,0.,0.,0.));
+        auto data_de=RunningStateHost_t(halfsize,RunningTuple_t(-1.*group,0.,0.,0., 1.,0.,0.,0.,0.,0.,0.,0.));
+        auto data_dh=RunningStateHost_t(halfsize,RunningTuple_t(1.*group,0.,0.,0., 1.,0.,0.,0.,0.,0.,0.,0.));
         
         
         //distribute them randomly in a line along Z
@@ -61,7 +65,7 @@ namespace loaddata{
     }
 
 
-    RunningStateHost_t loadfile(std::string path){
+    RunningStateHost_t loadfile(std::string path, size_t group=DEFAULT_GROUP){
         std::ifstream infile;
         
         RunningStateHost_t data_d;
@@ -97,14 +101,16 @@ namespace loaddata{
             lineStream >> pix >> piy >> piz >> pfx >> pfy >> pfz >> deposit >> typ;
     //         std::cout << line << std::endl;
             if(deposit<1) continue;
-            unsigned int idep=deposit;
+            
+            unsigned int idep=deposit/group;
+            if(idep<1) continue;
     //         std::cout << pix << "\t" << piy << "\t" << piz << "\t" << pfx << "\t" << pfy << "\t" << pfz << "\t" << deposit << std::endl;
             double d=sqrt((pfx-pix)*(pfx-pix)+(pfy-piy)*(pfy-piy)+(pfz-piz)*(pfz-piz));
             
             if(d==0){
                 for(unsigned int i=0;i<idep;i++){
-                    data_d.push_back(RunningTuple_t(-1.,pix, piy, piz, 1.,0.,0.,0.,0.,0.,0.,typ));
-                    data_d.push_back(RunningTuple_t(1.,pix, piy, piz, 1.,0.,0.,0.,0.,0.,0.,typ));
+                    data_d.push_back(RunningTuple_t(-1.*group,pix, piy, piz, 1.,0.,0.,0.,0.,0.,0.,typ));
+                    data_d.push_back(RunningTuple_t(1.*group,pix, piy, piz, 1.,0.,0.,0.,0.,0.,0.,typ));
                 }
             }
             else{
@@ -117,8 +123,8 @@ namespace loaddata{
                 std::uniform_real_distribution<double> dist(0.,d);
                 for(unsigned int i=0;i<idep;i++){
                     double vec=dist(mt);
-                    data_d.push_back(RunningTuple_t(-1.,a*vec+pix, b*vec+piy, c*vec+piz, 1.,0.,0.,0.,0.,0.,0.,typ));
-                    data_d.push_back(RunningTuple_t(1.,a*vec+pix, b*vec+piy, c*vec+piz, 1.,0.,0.,0.,0.,0.,0.,typ));
+                    data_d.push_back(RunningTuple_t(-1.*group,a*vec+pix, b*vec+piy, c*vec+piz, 1.,0.,0.,0.,0.,0.,0.,typ));
+                    data_d.push_back(RunningTuple_t(1.*group,a*vec+pix, b*vec+piy, c*vec+piz, 1.,0.,0.,0.,0.,0.,0.,typ));
                 }
             }
 

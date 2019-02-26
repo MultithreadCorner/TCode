@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,7 +22,7 @@
  * utils.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
 
 #ifndef UTILS_H_
@@ -80,6 +80,24 @@ if(flag){\
 #include <hydra/Range.h>
 #include <hydra/Zip.h>
 // #include <hydra/detail/external/Eigen/Dense>
+
+
+//ROOT
+#ifdef _ROOT_AVAILABLE_
+#include "TCanvas.h"
+#include "TROOT.h"
+#include "TGraph.h"
+#include "TGraph2D.h"
+#include "TH3D.h"
+#include "TH2D.h"
+#include "TApplication.h"
+#include "TGraphTime.h"
+#include "TMarker.h"
+#include "TFile.h"
+#include "TPad.h"
+#include "TLegend.h"
+#include "TTree.h"
+#endif //_ROOT_AVAILABLE_
 
 //printouts
 #define TOPROW    "===================================================================================================="
@@ -213,7 +231,7 @@ std::vector<singleconf> FillOneConfig(cfg::Setting const& root, int icfg){
         std::string file_single_config, file_single_name_config;
         bool draw_config=false, extrainfo_config=false;
         int bunchsize_config;
-        std::vector<size_t> nsteps_config, nparticles_config;
+        std::vector<size_t> nsteps_config, nparticles_config, group_config;
         std::vector<double> temperature_config, timestep_config, ampexp_config, sigmaexp_config, xshift_config, yshift_config, zshift_config, length_config;
         if(root["InputData"][icfg].exists("path")) root["InputData"][icfg].lookupValue("path",file_single_config);
         else file_single_config=DEFAULT_PATH;
@@ -243,6 +261,9 @@ std::vector<singleconf> FillOneConfig(cfg::Setting const& root, int icfg){
         
         if(root["InputData"][icfg].exists("particles")) fillint(&nparticles_config,root["InputData"][icfg]["particles"]);
         else nparticles_config.push_back(DEFAULT_PARTICLES);
+        
+        if(root["InputData"][icfg].exists("group")) fillint(&group_config,root["InputData"][icfg]["group"]);
+        else group_config.push_back(DEFAULT_GROUP);
         
         if(root["InputData"][icfg].exists("timestep")) filldouble(&timestep_config,root["InputData"][icfg]["timestep"]);
         else{
@@ -290,25 +311,28 @@ std::vector<singleconf> FillOneConfig(cfg::Setting const& root, int icfg){
                                     for(auto ys:yshift_config){
                                         for(auto zs:zshift_config){
                                             for(auto ln:length_config){
-                                                singleconf tmpconf;
-                                                tmpconf.set("path",file_single_config);
-                                                tmpconf.set("nickname",file_single_name_config+"_"+std::to_string(count));
-                                                tmpconf.set("plot",draw_config);
-                                                tmpconf.set("extrainfo",extrainfo_config);
-                                                tmpconf.set("bunchsize",(size_t)bunchsize_config);
-                                                if(p<=0) tmpconf.set("nparticles",(size_t)0);
-                                                else tmpconf.set("nparticles",p);
-                                                tmpconf.set("nsteps",s);
-                                                tmpconf.set("temperature",t);
-                                                tmpconf.set("timestep",tm);
-                                                tmpconf.set("amp",a);
-                                                tmpconf.set("sig",si);
-                                                tmpconf.set("xshift",xs);
-                                                tmpconf.set("yshift",ys);
-                                                tmpconf.set("zshift",zs);
-                                                tmpconf.set("length",ln);
-                                                sets.push_back(tmpconf);
-                                                count++;
+                                                for(auto gr:group_config){
+                                                    singleconf tmpconf;
+                                                    tmpconf.set("path",file_single_config);
+                                                    tmpconf.set("nickname",file_single_name_config+"_"+std::to_string(count));
+                                                    tmpconf.set("plot",draw_config);
+                                                    tmpconf.set("extrainfo",extrainfo_config);
+                                                    tmpconf.set("bunchsize",(size_t)bunchsize_config);
+                                                    if(p<=0) tmpconf.set("nparticles",(size_t)0);
+                                                    else tmpconf.set("nparticles",p);
+                                                    tmpconf.set("nsteps",s);
+                                                    tmpconf.set("temperature",t);
+                                                    tmpconf.set("timestep",tm);
+                                                    tmpconf.set("amp",a);
+                                                    tmpconf.set("sig",si);
+                                                    tmpconf.set("xshift",xs);
+                                                    tmpconf.set("yshift",ys);
+                                                    tmpconf.set("zshift",zs);
+                                                    tmpconf.set("length",ln);
+                                                    tmpconf.set("group",gr);
+                                                    sets.push_back(tmpconf);
+                                                    count++;
+                                                }
                                             }
                                         }
                                     }
@@ -411,5 +435,24 @@ std::ostream& operator<<(std::ostream& os, const hydra::tuple<T...>& tup)
     print_tuple<0>(os, tup);
     return os << "";
 }
+
+//get sign
+template <typename T> 
+__hydra_dual__
+int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+struct vectorLength
+{
+    
+    template<typename Particle>
+    __hydra_dual__
+    double operator()(Particle p){
+        return sqrt(hydra::get<0>(p)*hydra::get<0>(p) + hydra::get<1>(p)*hydra::get<1>(p) +hydra::get<2>(p)*hydra::get<2>(p));
+                                                                                
+    }
+    
+};
 
 #endif /* UTILS_H_ */

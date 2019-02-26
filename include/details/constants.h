@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,11 +22,22 @@
  * constants.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
+
+#ifndef __CONSTANTS_H__
+#define __CONSTANTS_H__
+
+//TCoDe Units 
+//length: micron
+//time: s
+//charge: coulomb
+//mass: Kg
 
 //physics quantities
 #define ECHARGE -1.60217662e-19 //coulombs
 #define HCHARGE 1.60217662e-19 //coulombs
-#define KB 1.3806e-23 //boltzmann constant in SI
+#define KB 1.3806e-23 //boltzmann constant in TCoDe units
 #define VLIGHT 3.0e12 //speed of light
+
+#endif

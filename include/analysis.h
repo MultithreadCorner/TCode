@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,8 +22,11 @@
  * analysis.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
+
+#ifndef __ANALYSIS_H__
+#define __ANALYSIS_H__
 
 //ROOT
 #include "TCanvas.h"
@@ -42,51 +45,7 @@
 
 using namespace hydra::placeholders;
 namespace analysis{
-    template <typename Data>
-    TH3D *getHist3DDraw(Data mapx, Data mapy, Data mapz, std::set<double> _vx, std::set<double> _vy, std::set<double> _vz){
-        
-        std::vector<double> vx(_vx.begin(),_vx.end());
-        std::vector<double> vy(_vy.begin(),_vy.end());
-        std::vector<double> vz(_vz.begin(),_vz.end());
-        std::vector<double> vex(vx.size()+1);
-        std::vector<double> vey(vy.size()+1);
-        std::vector<double> vez(vz.size()+1);
-        
-        vex[0]=vx[0]-fabs(vx[0]-vx[1])/10.;
-        vey[0]=vy[0]-fabs(vy[0]-vy[1])/10.;
-        vez[0]=vz[0]-fabs(vz[0]-vz[1])/10.;
-        
-        for(size_t ix=0;ix<vx.size()-1;ix++){
-            vex[ix+1]=(vx[ix]+vx[ix+1])/2.;
-            
-        }
-        for(size_t iy=0;iy<vy.size()-1;iy++){
-            vey[iy+1]=(vy[iy]+vy[iy+1])/2.;
-            
-        }
-        for(size_t iz=0;iz<vz.size()-1;iz++){
-            vez[iz+1]=(vz[iz]+vz[iz+1])/2.;
-        }
-        
-        vex[vx.size()]=vx[vx.size()-1]+fabs(vx[vx.size()-2]-vx[vx.size()-1])/10.;
-        vey[vy.size()]=vy[vy.size()-1]+fabs(vy[vy.size()-2]-vy[vy.size()-1])/10.;
-        vez[vz.size()]=vz[vz.size()-1]+fabs(vz[vz.size()-2]-vz[vz.size()-1])/10.;
-        
-        TH3D *h3=new TH3D("physmap","physmap;x [#mum];y [#mum];z [#mum]",vx.size(),vex.data(),vy.size(),vey.data(),vz.size(),vez.data());
-        
-
-        size_t count=0;
-        for(size_t iz=0;iz<vz.size();iz++){
-            for(size_t ix=0;ix<vx.size();ix++){
-                for(size_t iy=0;iy<vy.size();iy++){
-                    h3->SetBinContent(ix+1,iy+1,iz+1, sqrt(mapx[count]*mapx[count]+mapy[count]*mapy[count]+mapz[count]*mapz[count]));
-                    count++;
-                }
-            }
-        }
-        return h3;
-    }
-
+    
     TGraph *setGraph(size_t points, std::string nm, int color, int mstyle=8, int msize=1, int lwidth=2){
         TGraph *g = new TGraph(points);
         g->SetName(nm.c_str());
@@ -117,12 +76,23 @@ namespace analysis{
         
     };
 
-
+//     auto _SelectChargeAndSec = hydra::wrap_lambda(
+// 			[] __hydra_dual__ (auto p) {
+//                return ReducedTuple_t(hydra::get<2>(p)*(hydra::get<0>(p)>0)*(hydra::get<1>(p)>0), //holes current
+//                                 hydra::get<2>(p)*(hydra::get<0>(p)<0)*(hydra::get<1>(p)>0), //electrons current
+//                                 hydra::get<2>(p)*(hydra::get<0>(p)>0)*(hydra::get<3>(p)>0)*(hydra::get<1>(p)>0), //holes current secondaries
+//                                 hydra::get<2>(p)*(hydra::get<0>(p)<0)*(hydra::get<3>(p)>0)*(hydra::get<1>(p)>0), //electrons current secondaries
+//                                 1.0*(hydra::get<0>(p)>0)*(hydra::get<1>(p)<0), // count lost holes
+//                                 1.0*(hydra::get<0>(p)<0)*(hydra::get<1>(p)<0), // count lost electrons
+//                                 1.0*(hydra::get<0>(p)>0)*(hydra::get<1>(p)<0)*(hydra::get<3>(p)>0), // count lost holes secondaries
+//                                 1.0*(hydra::get<0>(p)<0)*(hydra::get<1>(p)<0)*(hydra::get<3>(p)>0)  // count lost electrons secondaries
+//                                                                                         ); 
+//             });
 
     struct SumTuples{
     __hydra_dual__ 
-    ReducedTuple_t operator()(const ReducedTuple_t &a,
-                                                const ReducedTuple_t &b) {
+    ReducedTuple_t operator()(const ReducedTuple_t a,
+                                                const ReducedTuple_t b) {
         return ReducedTuple_t(hydra::get<0>(a)+hydra::get<0>(b),
                     hydra::get<1>(a)+hydra::get<1>(b),
                     hydra::get<2>(a)+hydra::get<2>(b),
@@ -135,7 +105,37 @@ namespace analysis{
         }
     };
 
-
+//     struct SumCarriers {
+//         __hydra_dual__
+//         ReducedTuple_t operator()(RunningTuple_t &a,
+//                                                 RunningTuple_t &b) {
+//         return ReducedTuple_t(hydra::get<2>(a)*(hydra::get<0>(a)>0)*(hydra::get<1>(a)>0) +hydra::get<2>(b)*(hydra::get<0>(b)>0)*(hydra::get<1>(b)>0),
+//                     hydra::get<2>(a)*(hydra::get<0>(a)<0)*(hydra::get<1>(a)>0) +hydra::get<2>(b)*(hydra::get<0>(b)<0)*(hydra::get<1>(b)>0),
+//                     hydra::get<2>(a)*(hydra::get<0>(a)>0)*(hydra::get<3>(a)>0)*(hydra::get<1>(a)>0) + hydra::get<2>(b)*(hydra::get<0>(b)>0)*(hydra::get<3>(b)>0)*(hydra::get<1>(b)>0),
+//                     hydra::get<2>(a)*(hydra::get<0>(a)<0)*(hydra::get<3>(a)>0)*(hydra::get<1>(a)>0) + hydra::get<2>(b)*(hydra::get<0>(b)<0)*(hydra::get<3>(b)>0)*(hydra::get<1>(b)>0),
+//                     static_cast<double>((hydra::get<0>(a)>0)*(hydra::get<1>(a)<0)) + static_cast<double>((hydra::get<0>(b)>0)*(hydra::get<1>(b)<0)),
+//                     static_cast<double>((hydra::get<0>(a)<0)*(hydra::get<1>(a)<0)) + static_cast<double>((hydra::get<0>(b)<0)*(hydra::get<1>(b)<0)),
+//                     static_cast<double>((hydra::get<0>(a)>0)*(hydra::get<1>(a)<0)*(hydra::get<3>(a)>0)) + static_cast<double>((hydra::get<0>(b)>0)*(hydra::get<1>(b)<0)*(hydra::get<3>(b)>0)),
+//                     static_cast<double>((hydra::get<0>(a)<0)*(hydra::get<1>(a)<0)*(hydra::get<3>(a)>0)) + static_cast<double>((hydra::get<0>(b)<0)*(hydra::get<1>(b)<0)*(hydra::get<3>(b)>0))
+//             );
+//         }
+//     };
+//     
+//     auto _SumTuples = hydra::wrap_lambda(
+// 			[] __hydra_dual__ (ReducedTuple_t a,
+//                                                 ReducedTuple_t b){
+//         return ReducedTuple_t(hydra::get<0>(a)+hydra::get<0>(b),
+//                     hydra::get<1>(a)+hydra::get<1>(b),
+//                     hydra::get<2>(a)+hydra::get<2>(b),
+//                     hydra::get<3>(a)+hydra::get<3>(b),
+//                     hydra::get<4>(a)+hydra::get<4>(b),
+//                     hydra::get<5>(a)+hydra::get<5>(b),
+//                     hydra::get<6>(a)+hydra::get<6>(b),
+//                     hydra::get<7>(a)+hydra::get<7>(b)
+//             );
+// 		
+// 	});
+    
     void AnalyseSim(std::vector<ReducedTuple_t> &tp_currs, double timestep, std::map<std::string,std::string> settings){
         
         INFO_LINE("Analysing simulation...")
@@ -733,7 +733,7 @@ namespace analysis{
             }
             
             
-            
+            extradir->WriteTObject(hdraw,"h3bkg","Overwrite");
             
             can->Print(Form("%s/%s.gif++",settings["outputdir"].c_str(),settings["name"].c_str()));
             delete can;
@@ -746,3 +746,5 @@ namespace analysis{
         
     }
 }
+
+#endif
