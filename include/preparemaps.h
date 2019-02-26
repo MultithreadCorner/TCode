@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,9 +22,12 @@
  * preparemaps.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
-#include <hydra/detail/external/thrust/binary_search.h>
+
+#ifndef __PREPAREMAPS_H__
+#define __PREPAREMAPS_H__
+
 #include <hydra/detail/Hash.h>
 using namespace hydra::placeholders;
 namespace maps{
@@ -36,30 +39,6 @@ namespace maps{
         auto operator()(T t){
             return hydra::detail::hash_tuple(t);
         }
-    };
-    
-    struct myhashing{
-        myhashing()=delete;
-         
-        myhashing(double d1, double d2):
-        dim1(d1),
-        dim2(d2)
-        {}
-        
-        __hydra_dual__
-        myhashing(myhashing const& other):
-        dim1(other.dim1),
-        dim2(other.dim2)
-        {}
-        
-        template<typename T>
-        auto operator()(T t){
-            return hydra::get<0>(t)+hydra::get<1>(t)*dim1+hydra::get<2>(t)*dim1*dim2;
-        }
-        
-        
-        double dim1;
-        double dim2;
     };
     
     //class for single physics map
@@ -95,7 +74,15 @@ namespace maps{
         
 
     public:
+        
+        physmap(){
+        }
+        
         physmap(std::string s, size_t skipcolumns=0, size_t skiprows=0, double scale=1., double scalespace=1., bool sparse=false){
+            this->init(s,skipcolumns,skiprows,scale,scalespace,sparse);
+        }
+        
+        void init(std::string s, size_t skipcolumns=0, size_t skiprows=0, double scale=1., double scalespace=1., bool sparse=false){
             _filename=s;
             _cskip=skipcolumns;
             _rskip=skiprows;
@@ -103,6 +90,9 @@ namespace maps{
             _gridyfied=false;
             _scalefield=scale;
             _scalespace=scalespace;
+        }
+        
+        void prepare(){
             this->checkfile();
             this->loaddata();
             if(_isown) this->calcgrid();
@@ -112,21 +102,25 @@ namespace maps{
                 this->calcgrid();
             }
         }
+        
         void set_scalespace(double A){_scalespace=A;}
+        
         void set_scale(double A){_scalefield=A;}
+        
         double get_scalespace(double A){return _scalespace;}
+        
         double get_scale(double A){return _scalefield;}
+        
         void gridify(std::set<MP> xs, std::set<MP> ys, std::set<MP> zs); //get in a grid
+        
         void write(std::string outputpath);
+        
         hydra::multiarray<MP,N,hydra::host::sys_t> getdata(){return _data;}
         std::set<MP> getx(){return _gridx;}
         std::set<MP> gety(){return _gridy;}
         std::set<MP> getz(){return _gridz;}
         template <typename Container>
         void fillspacepoints(Container &vx, Container &vy, Container &vz){
-            vx.reserve(_gridx.size());
-            vy.reserve(_gridy.size());
-            vz.reserve(_gridz.size());
             vx.resize(_gridx.size());
             vy.resize(_gridy.size());
             vz.resize(_gridz.size());
@@ -137,16 +131,12 @@ namespace maps{
         
         template <typename Container>
         void fillscalar(Container &v){
-            v.reserve(_data.size());
             v.resize(_data.size());
             hydra::copy(hydra::make_range(_data.begin(_3),_data.end(_3)),v);
         }
         
         template <typename Container>
         void fillvector(Container &vx, Container &vy, Container &vz){
-            vx.reserve(_data.size());
-            vy.reserve(_data.size());
-            vz.reserve(_data.size());
             vx.resize(_data.size());
             vy.resize(_data.size());
             vz.resize(_data.size());
@@ -157,21 +147,13 @@ namespace maps{
         
         template <typename Container>
         void fillallquantities(Container &ex, Container &ey, Container &ez, Container &emob, Container &hmob, Container &wx, Container &wy, Container &wz){
-            ex.reserve(_data.size());
-            ey.reserve(_data.size());
-            ez.reserve(_data.size());
             ex.resize(_data.size());
             ey.resize(_data.size());
             ez.resize(_data.size());
-            wx.reserve(_data.size());
-            wy.reserve(_data.size());
-            wz.reserve(_data.size());
             wx.resize(_data.size());
             wy.resize(_data.size());
             wz.resize(_data.size());
-            emob.reserve(_data.size());
             emob.resize(_data.size());
-            hmob.reserve(_data.size());
             hmob.resize(_data.size());
             hydra::copy(hydra::make_range(_data.begin(_3),_data.end(_3)),ex);
             hydra::copy(hydra::make_range(_data.begin(_4),_data.end(_4)),ey);
@@ -411,6 +393,109 @@ namespace maps{
     }
     
     
+    
+    //class to manage map configuration
+    class mapconfig{
+    private:
+        bool _multimap = false;
+        std::tuple<double,double,double,double,double,double> _borders;
+        
+        maps::physmap<double,11> _pm;
+        maps::physmap<double,6> _efieldm;
+        maps::physmap<double,6> _wfieldm;
+        maps::physmap<double,4> _emobm;
+        maps::physmap<double,4> _hmobm;
+        
+        VecDev_t<double> _xvec, _yvec, _zvec;
+        //efield vecs
+        VecDev_t<double> _xvec_ef, _yvec_ef, _zvec_ef;
+        VecDev_t<double> efieldvecx, efieldvecy, efieldvecz;
+        //wfield vecs
+        VecDev_t<double> _xvec_wf, _yvec_wf, _zvec_wf;
+        VecDev_t<double> wfieldvecx, wfieldvecy, wfieldvecz;
+        
+        //emob vecs
+        VecDev_t<double> _xvec_emob, _yvec_emob, _zvec_emob;
+        VecDev_t<double> emobvec;
+        
+        //hmob vecs
+        VecDev_t<double> _xvec_hmob, _yvec_hmob, _zvec_hmob;
+        VecDev_t<double> hmobvec;
+        
+    public:
+        mapconfig(){}
+        
+        void load(std::string map_path){
+            INFO_LINE("Loading single map")
+            _pm.init(map_path);
+            _pm.prepare();
+            _pm.fillspacepoints<VecDev_t<double> >(_xvec,_yvec,_zvec);
+            _pm.fillallquantities<VecDev_t<double> >(efieldvecx,efieldvecy,efieldvecz,emobvec,hmobvec,wfieldvecx,wfieldvecy,wfieldvecz);
+            std::get<0>(_borders) = *(_pm.getx().begin());
+            std::get<1>(_borders) = *(_pm.getx().rbegin());
+            std::get<2>(_borders) = *(_pm.gety().begin());
+            std::get<3>(_borders) = *(_pm.gety().rbegin());
+            std::get<4>(_borders) = *(_pm.getz().begin());
+            std::get<5>(_borders) = *(_pm.getz().rbegin());
+            _multimap = false;
+            std::cout << MIDDLEROW << std::endl;
+            INFO_LINE("Volume boundaries: [ "<< std::get<0>(_borders) << " < x < "<< std::get<1>(_borders) << " ] micron, "<<"[ "<< std::get<2>(_borders) << " < y < "<< std::get<3>(_borders) <<" ] micron, "<<"[ "<< std::get<4>(_borders) << " < z < "<< std::get<5>(_borders) <<" ] micron")
+        }
+        
+        void load(std::string efield_path, std::string emob_path, std::string hmob_path, std::string wfield_path){
+            INFO_LINE("Loading separate maps")
+            
+            
+            _efieldm.init(efield_path); //E field is a vector
+            _efieldm.prepare();
+            _efieldm.fillspacepoints<VecDev_t<double> >(_xvec_ef,_yvec_ef,_zvec_ef);
+            _efieldm.fillvector<VecDev_t<double> >(efieldvecx,efieldvecy,efieldvecz);
+            
+//             for(auto cf:configlist){
+//                 if(std::get<bool>(cf.get("plot"))){
+//                     VecHost_t<double> efieldvecx_host, efieldvecy_host, efieldvecz_host;
+//                     efieldm.fillvector<VecHost_t<double> >(efieldvecx_host,efieldvecy_host,efieldvecz_host);
+//                     h3=analysis::getHist3DDraw( efieldvecx_host, efieldvecy_host, efieldvecz_host, efieldm.getx(),efieldm.gety(),efieldm.getz());
+//                     break;
+//                 }
+//             }
+
+        
+            _wfieldm.init(wfield_path); // Weighting field is a vector
+            _wfieldm.prepare();
+            _wfieldm.fillspacepoints<VecDev_t<double> >(_xvec_wf,_yvec_wf,_zvec_wf);
+            _wfieldm.fillvector<VecDev_t<double> >(wfieldvecx,wfieldvecy,wfieldvecz);
+            
+            
+            _emobm.init(emob_path); // Electron mobility is a scalar
+            _emobm.prepare();
+            _emobm.fillspacepoints<VecDev_t<double> >(_xvec_emob,_yvec_emob,_zvec_emob);
+            _emobm.fillscalar<VecDev_t<double> >(emobvec);
+            
+            
+            _hmobm.init(hmob_path); // Hole mobility is a scalar
+            _hmobm.prepare();
+            _hmobm.fillspacepoints<VecDev_t<double> >(_xvec_hmob,_yvec_hmob,_zvec_hmob);
+            _hmobm.fillscalar<VecDev_t<double> >(hmobvec);
+            
+            
+            std::get<0>(_borders) = std::min(*(_efieldm.getx().begin()),std::min(*(_wfieldm.getx().begin()),std::min(*(_emobm.getx().begin()),*(_hmobm.getx().begin()))));
+            std::get<1>(_borders) = std::max(*(_efieldm.getx().rbegin()),std::max(*(_wfieldm.getx().rbegin()),std::max(*(_emobm.getx().rbegin()),*(_hmobm.getx().rbegin()))));
+            std::get<2>(_borders) = std::min(*(_efieldm.gety().begin()),std::min(*(_wfieldm.gety().begin()),std::min(*(_emobm.gety().begin()),*(_hmobm.gety().begin()))));
+            std::get<3>(_borders) = std::max(*(_efieldm.gety().rbegin()),std::max(*(_wfieldm.gety().rbegin()),std::max(*(_emobm.gety().rbegin()),*(_hmobm.gety().rbegin()))));
+            std::get<4>(_borders) = std::min(*(_efieldm.getz().begin()),std::min(*(_wfieldm.getz().begin()),std::min(*(_emobm.getz().begin()),*(_hmobm.getz().begin()))));
+            std::get<5>(_borders) = std::max(*(_efieldm.getz().rbegin()),std::max(*(_wfieldm.getz().rbegin()),std::max(*(_emobm.getz().rbegin()),*(_hmobm.getz().rbegin()))));
+            
+            _multimap = true;
+            
+            std::cout << MIDDLEROW << std::endl;
+            INFO_LINE("Volume boundaries: [ "<< std::get<0>(_borders) << " < x < "<< std::get<1>(_borders) << " ] micron, "<<"[ "<< std::get<2>(_borders) << " < y < "<< std::get<3>(_borders) <<" ] micron, "<<"[ "<< std::get<4>(_borders) << " < z < "<< std::get<5>(_borders) <<" ] micron")
+        }
+        
+        //is multimap or not?
+        bool ismulti(){return _multimap;}
+    };
+    
     //prepare maps
     void preparemaps(cfg::Setting const& root){
         
@@ -422,8 +507,9 @@ namespace maps{
         if(root.exists("pm")){
             INFO_LINE("Loading single map")
             
-            physmap<double,11> pm(root["pm"], (int)root["pm_sc"], (int)root["pm_sr"], (double)root["pm_scale"], (double)root["pm_scalespace"]);
-            std::string out=root["pm_out"];
+            physmap<double,11> pm(root["map"]["path"], (int)root["map"]["sc"], (int)root["map"]["sr"], (double)root["map"]["scale"], (double)root["map"]["scalespace"]);
+            pm.prepare();
+            std::string out=root["pm"]["out"];
             pm.write(outputdir+(std::string)"/"+out);
             
         }
@@ -431,26 +517,30 @@ namespace maps{
             INFO_LINE("Loading separate maps")
             
             {
-                physmap<double,6> ef(root["ef"], (int)root["ef_sc"], (int)root["ef_sr"], (double)root["ef_scale"], (double)root["ef_scalespace"]);
-                std::string out_ef=root["ef_out"];
+                physmap<double,6> ef(root["efield"]["path"], (int)root["efield"]["sc"], (int)root["efield"]["sr"], (double)root["efield"]["scale"], (double)root["efield"]["scalespace"]);
+                ef.prepare();
+                std::string out_ef=root["efield"]["out"];
                 ef.write(outputdir+(std::string)"/"+out_ef);
             }
             
             {
-                physmap<double,6> wf(root["wf"], (int)root["wf_sc"], (int)root["wf_sr"], (double)root["wf_scale"], (double)root["wf_scalespace"]);
-                std::string out_wf=root["wf_out"];
+                physmap<double,6> wf(root["wfield"]["path"], (int)root["wfield"]["sc"], (int)root["wfield"]["sr"], (double)root["wfield"]["scale"], (double)root["wfield"]["scalespace"]);
+                wf.prepare();
+                std::string out_wf=root["wfield"]["out"];
                 wf.write(outputdir+(std::string)"/"+out_wf);
             }
             
             {
-                physmap<double,4> emob(root["emob"], (int)root["emob_sc"], (int)root["emob_sr"], (double)root["emob_scale"], (double)root["emob_scalespace"]);
-                std::string out_emob=root["emob_out"];
+                physmap<double,4> emob(root["emob"]["path"], (int)root["emob"]["sc"], (int)root["emob"]["sr"], (double)root["emob"]["scale"], (double)root["emob"]["scalespace"]);
+                emob.prepare();
+                std::string out_emob=root["emob"]["out"];
                 emob.write(outputdir+(std::string)"/"+out_emob);
             }
             
             {
-                physmap<double,4> hmob(root["hmob"], (int)root["hmob_sc"], (int)root["hmob_sr"], (double)root["hmob_scale"], (double)root["hmob_scalespace"]);
-                std::string out_hmob=root["hmob_out"];
+                physmap<double,4> hmob(root["hmob"]["path"], (int)root["hmob"]["sc"], (int)root["hmob"]["sr"], (double)root["hmob"]["scale"], (double)root["hmob"]["scalespace"]);
+                hmob.prepare();
+                std::string out_hmob=root["hmob"]["out"];
                 hmob.write(outputdir+(std::string)"/"+out_hmob);
             }
         }
@@ -462,3 +552,5 @@ namespace maps{
         std::cout << TOPROW << std::endl;
     }
 }
+
+#endif

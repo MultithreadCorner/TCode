@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -24,7 +24,8 @@
  *  Created on: 12/11/2018
  *      Author: Andrea Contu
  */
-#include "Evolve.h"
+#include <Evolve.h>
+#include <simulation.h>
 
 void signal_simulation(cfg::Setting const& root, int icfg=-1){
     
@@ -47,21 +48,21 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     //3d hist of efield
     TH3D* h3=NULL;
     
-    VecDev_t _xvec, _yvec, _zvec;
+    VecDev_t<double> _xvec, _yvec, _zvec;
     //efield vecs
-    VecDev_t _xvec_ef, _yvec_ef, _zvec_ef;
-    VecDev_t efieldvecx, efieldvecy, efieldvecz;
+    VecDev_t<double> _xvec_ef, _yvec_ef, _zvec_ef;
+    VecDev_t<double> efieldvecx, efieldvecy, efieldvecz;
     //wfield vecs
-    VecDev_t _xvec_wf, _yvec_wf, _zvec_wf;
-    VecDev_t wfieldvecx, wfieldvecy, wfieldvecz;
+    VecDev_t<double> _xvec_wf, _yvec_wf, _zvec_wf;
+    VecDev_t<double> wfieldvecx, wfieldvecy, wfieldvecz;
     
     //emob vecs
-    VecDev_t _xvec_emob, _yvec_emob, _zvec_emob;
-    VecDev_t emobvec;
+    VecDev_t<double> _xvec_emob, _yvec_emob, _zvec_emob;
+    VecDev_t<double> emobvec;
     
     //hmob vecs
-    VecDev_t _xvec_hmob, _yvec_hmob, _zvec_hmob;
-    VecDev_t hmobvec;
+    VecDev_t<double> _xvec_hmob, _yvec_hmob, _zvec_hmob;
+    VecDev_t<double> hmobvec;
     
     double _xmin=0, _xmax=0, _ymin=0, _ymax=0, _zmin=0, _zmax=0;
     //load physics maps
@@ -76,9 +77,10 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         //get physicsmap path
         std::string physmap_path=root["PhysicsMaps"]["map"];
         maps::physmap<double,11> pm(physmap_path);
+        pm.prepare();
         
-        pm.fillspacepoints<VecDev_t>(_xvec,_yvec,_zvec);
-        pm.fillallquantities<VecDev_t>(efieldvecx,efieldvecy,efieldvecz,emobvec,hmobvec,wfieldvecx,wfieldvecy,wfieldvecz);
+        pm.fillspacepoints<VecDev_t<double> >(_xvec,_yvec,_zvec);
+        pm.fillallquantities<VecDev_t<double> >(efieldvecx,efieldvecy,efieldvecz,emobvec,hmobvec,wfieldvecx,wfieldvecy,wfieldvecz);
         
         _xmin = *(pm.getx().begin());
         _xmax = *(pm.getx().rbegin());
@@ -89,8 +91,8 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         
         for(auto cf:configlist){
             if(std::get<bool>(cf.get("plot"))){
-                VecHost_t efieldvecx_host, efieldvecy_host, efieldvecz_host;
-                pm.fillvector<VecHost_t>(efieldvecx_host,efieldvecy_host,efieldvecz_host);
+                VecHost_t<double> efieldvecx_host, efieldvecy_host, efieldvecz_host;
+                pm.fillvector<VecHost_t<double> >(efieldvecx_host,efieldvecy_host,efieldvecz_host);
                 h3=analysis::getHist3DDraw( efieldvecx_host, efieldvecy_host, efieldvecz_host, pm.getx(),pm.gety(),pm.getz());
                 break;
             }
@@ -102,44 +104,51 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
             INFO_LINE("Loading separate maps")
             
             std::string efieldmap_path=root["PhysicsMaps"]["efield"];
+            
             maps::physmap<double,6> efieldm(efieldmap_path); //E field is a vector
-            efieldm.fillspacepoints<VecDev_t>(_xvec_ef,_yvec_ef,_zvec_ef);
-            efieldm.fillvector<VecDev_t>(efieldvecx,efieldvecy,efieldvecz);
+            efieldm.prepare();
+            
+            efieldm.fillspacepoints<VecDev_t<double> >(_xvec_ef,_yvec_ef,_zvec_ef);
+            efieldm.fillvector<VecDev_t<double> >(efieldvecx,efieldvecy,efieldvecz);
             
             for(auto cf:configlist){
                 if(std::get<bool>(cf.get("plot"))){
-                    VecHost_t efieldvecx_host, efieldvecy_host, efieldvecz_host;
-                    efieldm.fillvector<VecHost_t>(efieldvecx_host,efieldvecy_host,efieldvecz_host);
+                    VecHost_t<double> efieldvecx_host, efieldvecy_host, efieldvecz_host;
+                    efieldm.fillvector<VecHost_t<double> >(efieldvecx_host,efieldvecy_host,efieldvecz_host);
                     h3=analysis::getHist3DDraw( efieldvecx_host, efieldvecy_host, efieldvecz_host, efieldm.getx(),efieldm.gety(),efieldm.getz());
                     break;
                 }
             }
+
             
             std::string wfieldmap_path=root["PhysicsMaps"]["wfield"];
             maps::physmap<double,6> wfieldm(wfieldmap_path); // Weighting field is a vector
-            wfieldm.fillspacepoints<VecDev_t>(_xvec_wf,_yvec_wf,_zvec_wf);
-            wfieldm.fillvector<VecDev_t>(wfieldvecx,wfieldvecy,wfieldvecz);
+            wfieldm.prepare();
+            wfieldm.fillspacepoints<VecDev_t<double> >(_xvec_wf,_yvec_wf,_zvec_wf);
+            wfieldm.fillvector<VecDev_t<double> >(wfieldvecx,wfieldvecy,wfieldvecz);
             
             std::string emobmap_path=root["PhysicsMaps"]["emob"];
             maps::physmap<double,4> emobm(emobmap_path); // Electron mobility is a scalar
-            emobm.fillspacepoints<VecDev_t>(_xvec_emob,_yvec_emob,_zvec_emob);
-            emobm.fillscalar<VecDev_t>(emobvec);
+            emobm.prepare();
+            emobm.fillspacepoints<VecDev_t<double> >(_xvec_emob,_yvec_emob,_zvec_emob);
+            emobm.fillscalar<VecDev_t<double> >(emobvec);
             
             std::string hmobmap_path=root["PhysicsMaps"]["hmob"];
             maps::physmap<double,4> hmobm(hmobmap_path); // Hole mobility is a scalar
-            hmobm.fillspacepoints<VecDev_t>(_xvec_hmob,_yvec_hmob,_zvec_hmob);
-            hmobm.fillscalar<VecDev_t>(hmobvec);
+            hmobm.prepare();
+            hmobm.fillspacepoints<VecDev_t<double> >(_xvec_hmob,_yvec_hmob,_zvec_hmob);
+            hmobm.fillscalar<VecDev_t<double> >(hmobvec);
             
             
-            _xmin = std::min(*(efieldm.getx().begin()),std::min(*(wfieldm.getx().begin()),std::min(*(emobm.getx().begin()),*(hmobm.getx().begin()))));
-            _xmax = std::max(*(efieldm.getx().rbegin()),std::max(*(wfieldm.getx().rbegin()),std::max(*(emobm.getx().rbegin()),*(hmobm.getx().rbegin()))));
-            _ymin = std::min(*(efieldm.gety().begin()),std::min(*(wfieldm.gety().begin()),std::min(*(emobm.gety().begin()),*(hmobm.gety().begin()))));
-            _ymax = std::max(*(efieldm.gety().rbegin()),std::max(*(wfieldm.gety().rbegin()),std::max(*(emobm.gety().rbegin()),*(hmobm.gety().rbegin()))));
-            _zmin = std::min(*(efieldm.getz().begin()),std::min(*(wfieldm.getz().begin()),std::min(*(emobm.getz().begin()),*(hmobm.getz().begin()))));
-            _zmax = std::max(*(efieldm.getz().rbegin()),std::max(*(wfieldm.getz().rbegin()),std::max(*(emobm.getz().rbegin()),*(hmobm.getz().rbegin()))));
+            _xmin = std::max(*(efieldm.getx().begin()),std::max(*(wfieldm.getx().begin()),std::max(*(emobm.getx().begin()),*(hmobm.getx().begin()))));
+            _xmax = std::min(*(efieldm.getx().rbegin()),std::min(*(wfieldm.getx().rbegin()),std::min(*(emobm.getx().rbegin()),*(hmobm.getx().rbegin()))));
+            _ymin = std::max(*(efieldm.gety().begin()),std::max(*(wfieldm.gety().begin()),std::max(*(emobm.gety().begin()),*(hmobm.gety().begin()))));
+            _ymax = std::min(*(efieldm.gety().rbegin()),std::min(*(wfieldm.gety().rbegin()),std::min(*(emobm.gety().rbegin()),*(hmobm.gety().rbegin()))));
+            _zmin = std::max(*(efieldm.getz().begin()),std::max(*(wfieldm.getz().begin()),std::max(*(emobm.getz().begin()),*(hmobm.getz().begin()))));
+            _zmax = std::min(*(efieldm.getz().rbegin()),std::min(*(wfieldm.getz().rbegin()),std::min(*(emobm.getz().rbegin()),*(hmobm.getz().rbegin()))));
             
             std::cout << MIDDLEROW << std::endl;
-            INFO_LINE("Volume boundaries: [ "<< _xmin << " < x < "<< _xmax << " ] micron, "<<"[ "<< _ymin << " < y < "<< _ymax <<" ] micron, "<<"[ "<< _xmin << " < x < "<< _xmax <<" ] micron")
+            INFO_LINE("Volume boundaries: [ "<< _xmin << " < x < "<< _xmax << " ] micron, "<<"[ "<< _ymin << " < y < "<< _ymax <<" ] micron, "<<"[ "<< _zmin << " < z < "<< _zmax <<" ] micron")
         }
     }
     
@@ -166,7 +175,6 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     {
         std::cout << MIDDLEROW << std::endl;
         //get configuration
-        auto startconf = std::chrono::high_resolution_clock::now();
         auto bunchsize      =   std::get<size_t>(cf.get("bunchsize"));
         auto nparticles     =   std::get<size_t>(cf.get("nparticles"));
         auto nsteps         =   std::get<size_t>(cf.get("nsteps"));
@@ -256,26 +264,16 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
                     Generator.SetSeed(std::rand());
                     Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_y), data_d.end(_tc_gauss_y));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_z), data_d.end(_tc_gauss_z));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
                     
-                    
-                    hydra::for_each(data_d, evolve::SetVeldiff_multi(niter,
-                                                    timestep,
-                                                    temperature_nmob,
-                                                    _xvec_emob, _yvec_emob, _zvec_emob,
-                                                    _xvec_hmob, _yvec_hmob, _zvec_hmob,
-                                                    emobvec,hmobvec));
+                    Generator.SetSeed(std::rand());
+                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
+                    Generator.SetSeed(std::rand());
+                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
                     
                     
                     hydra::for_each(data_d, evolve::ApplyRamo_multi(niter,
                                                                     timestep,
+                                                                    temperature_nmob,
                                                                     _xvec_ef, _yvec_ef, _zvec_ef, efieldvecx, efieldvecy, efieldvecz,
                                                                     _xvec_emob, _yvec_emob, _zvec_emob, emobvec,
                                                                     _xvec_hmob, _yvec_hmob, _zvec_hmob, hmobvec,
@@ -315,25 +313,16 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
                     Generator.SetSeed(std::rand());
                     Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_y), data_d.end(_tc_gauss_y));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_z), data_d.end(_tc_gauss_z));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
                     
-                    
-                    hydra::for_each(data_d, evolve::SetVeldiff(niter,
-                                                    timestep,
-                                                    temperature_nmob,
-                                                    _xvec, _yvec, _zvec,
-                                                    emobvec,hmobvec));
+                    Generator.SetSeed(std::rand());
+                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
+                    Generator.SetSeed(std::rand());
+                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
                     
                     
                     hydra::for_each(data_d, evolve::ApplyRamo(niter,
                                                                     timestep,
+                                                                    temperature_nmob,
                                                                     _xvec, _yvec, _zvec,
                                                                     efieldvecx, efieldvecy, efieldvecz,
                                                                     emobvec,hmobvec,

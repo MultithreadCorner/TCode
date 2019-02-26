@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,8 +22,11 @@
  * defaults.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
+
+#ifndef __DEFAULTS_H__
+#define __DEFAULTS_H__
 
 //project name
 #define PROJECT_NAME "TCoDe"
@@ -62,3 +65,4 @@
 #define DEFAULT_Y 0.                    //default deposit shift in y direction
 #define DEFAULT_Z 0.                    //default deposit shift in z direction
 
+#endif

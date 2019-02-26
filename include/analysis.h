@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,8 +22,11 @@
  * analysis.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
+
+#ifndef __ANALYSIS_H__
+#define __ANALYSIS_H__
 
 //ROOT
 #include "TCanvas.h"
@@ -746,3 +749,5 @@ namespace analysis{
         
     }
 }
+
+#endif

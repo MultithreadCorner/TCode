@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -188,41 +188,46 @@ int main(int argv, char** argc){
     root.add("OutputDirectory", cfg::Setting::TypeString) = outputdir;
     
     if(PHYSMAPfile!="none"){
-        root.add("pm", cfg::Setting::TypeString) = PHYSMAPfile;
-        root.add("pm_out", cfg::Setting::TypeString) = PHYSMAPfile_out;
-        root.add("pm_sc", cfg::Setting::TypeInt) = physmap_sc;
-        root.add("pm_sr", cfg::Setting::TypeInt) = physmap_sr;
-        root.add("pm_scale", cfg::Setting::TypeFloat) = physmap_scale;
-        root.add("pm_scalespace", cfg::Setting::TypeFloat) = physmap_scalespace;
+        cfg::Setting & root_pm = root["map"];
+        root_pm.add("path", cfg::Setting::TypeString) = PHYSMAPfile;
+        root_pm.add("out", cfg::Setting::TypeString) = PHYSMAPfile_out;
+        root_pm.add("sc", cfg::Setting::TypeInt) = physmap_sc;
+        root_pm.add("sr", cfg::Setting::TypeInt) = physmap_sr;
+        root_pm.add("scale", cfg::Setting::TypeFloat) = physmap_scale;
+        root_pm.add("scalespace", cfg::Setting::TypeFloat) = physmap_scalespace;
     }
     else{
-        root.add("ef", cfg::Setting::TypeString) = EFfile;
-        root.add("ef_out", cfg::Setting::TypeString) = EFfile_out;
-        root.add("ef_sc", cfg::Setting::TypeInt) = efield_sc;
-        root.add("ef_sr", cfg::Setting::TypeInt) = efield_sr;
-        root.add("ef_scale", cfg::Setting::TypeFloat) = efield_scale;
-        root.add("ef_scalespace", cfg::Setting::TypeFloat) = efield_scalespace;
+        cfg::Setting & root_efield = root["efield"];
+        root_efield.add("path", cfg::Setting::TypeString) = EFfile;
+        root_efield.add("out", cfg::Setting::TypeString) = EFfile_out;
+        root_efield.add("sc", cfg::Setting::TypeInt) = efield_sc;
+        root_efield.add("sr", cfg::Setting::TypeInt) = efield_sr;
+        root_efield.add("scale", cfg::Setting::TypeFloat) = efield_scale;
+        root_efield.add("scalespace", cfg::Setting::TypeFloat) = efield_scalespace;
         
-        root.add("wf", cfg::Setting::TypeString) = WFfile;
-        root.add("wf_out", cfg::Setting::TypeString) = WFfile_out;
-        root.add("wf_sc", cfg::Setting::TypeInt) = wfield_sc;
-        root.add("wf_sr", cfg::Setting::TypeInt) = wfield_sr;
-        root.add("wf_scale", cfg::Setting::TypeFloat) = wfield_scale;
-        root.add("wf_scalespace", cfg::Setting::TypeFloat) = wfield_scalespace;
+        cfg::Setting & root_wfield = root["wfield"];
+        root_wfield.add("path", cfg::Setting::TypeString) = WFfile;
+        root_wfield.add("out", cfg::Setting::TypeString) = WFfile_out;
+        root_wfield.add("sc", cfg::Setting::TypeInt) = wfield_sc;
+        root_wfield.add("sr", cfg::Setting::TypeInt) = wfield_sr;
+        root_wfield.add("scale", cfg::Setting::TypeFloat) = wfield_scale;
+        root_wfield.add("scalespace", cfg::Setting::TypeFloat) = wfield_scalespace;
         
-        root.add("emob", cfg::Setting::TypeString) = EMOBfile;
-        root.add("emob_out", cfg::Setting::TypeString) = EMOBfile_out;
-        root.add("emob_sc", cfg::Setting::TypeInt) = emob_sc;
-        root.add("emob_sr", cfg::Setting::TypeInt) = emob_sr;
-        root.add("emob_scale", cfg::Setting::TypeFloat) = emob_scale;
-        root.add("emob_scalespace", cfg::Setting::TypeFloat) = emob_scalespace;
+        cfg::Setting & root_emob = root["emob"];
+        root_emob.add("path", cfg::Setting::TypeString) = EMOBfile;
+        root_emob.add("out", cfg::Setting::TypeString) = EMOBfile_out;
+        root_emob.add("sc", cfg::Setting::TypeInt) = emob_sc;
+        root_emob.add("sr", cfg::Setting::TypeInt) = emob_sr;
+        root_emob.add("scale", cfg::Setting::TypeFloat) = emob_scale;
+        root_emob.add("scalespace", cfg::Setting::TypeFloat) = emob_scalespace;
         
-        root.add("hmob", cfg::Setting::TypeString) = HMOBfile;
-        root.add("hmob_out", cfg::Setting::TypeString) = HMOBfile_out;
-        root.add("hmob_sc", cfg::Setting::TypeInt) = hmob_sc;
-        root.add("hmob_sr", cfg::Setting::TypeInt) = hmob_sr;
-        root.add("hmob_scale", cfg::Setting::TypeFloat) = hmob_scale;
-        root.add("hmob_scalespace", cfg::Setting::TypeFloat) = hmob_scalespace;
+        cfg::Setting & root_hmob = root["hmob"];
+        root_hmob.add("path", cfg::Setting::TypeString) = HMOBfile;
+        root_hmob.add("out", cfg::Setting::TypeString) = HMOBfile_out;
+        root_hmob.add("sc", cfg::Setting::TypeInt) = hmob_sc;
+        root_hmob.add("sr", cfg::Setting::TypeInt) = hmob_sr;
+        root_hmob.add("scale", cfg::Setting::TypeFloat) = hmob_scale;
+        root_hmob.add("scalespace", cfg::Setting::TypeFloat) = hmob_scalespace;
     }
     
     maps::preparemaps(root);

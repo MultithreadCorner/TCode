@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,8 +22,11 @@
  * Evolve.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
+
+#ifndef __EVOLVE_H__
+#define __EVOLVE_H__
 
 namespace evolve{    
     
@@ -44,11 +47,19 @@ namespace evolve{
         
     }
     
+    /*
+    review A.A. 
+    why not using std::binary_search (https://en.cppreference.com/w/cpp/algorithm/binary_search) ?
+    if V is too large (O(6) or higher) and it becomes too slow, we can wrapp a vectorized version 
+    in hydra...  
+    */
+    
     //function to get index in one dimension (binary search)
     __hydra_dual__
     inline size_t getindex(double v[], size_t n, double f, size_t first=0){
         if(f<=v[first]){
             return first+1;
+
         }
         if(f>=v[n-1]){
             return n-1;
@@ -102,297 +113,28 @@ namespace evolve{
         ind8[6] = ind[1]-1 +(ind[0])*sy+(ind[2])*fNPXY;
         ind8[7] = ind[1] + (ind[0])*sy+(ind[2])*fNPXY;
     }
+    /*
+    Review A.A.
     
-    //functor to fill carrier drift velocities
-    struct SetVeldiff
-    {
-
-        SetVeldiff()=delete;                                         // avoid creating objects with undefined data
-
-        // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        SetVeldiff(size_t n, double timestep, double diffusion, double *in_x, size_t dim_x,double *in_y, size_t dim_y,double *in_z, size_t dim_z, double *in_em, double *in_hm):
-        fN(n),
-        fStep(timestep),
-        fDiff(diffusion),
-        fNPX(dim_x),
-        fNPY(dim_y),
-        fNPZ(dim_z),
-        xvec(in_x),
-        yvec(in_y),
-        zvec(in_z),
-        vecem(in_em),
-        vechm(in_hm)
-        {}
-        
-        // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        SetVeldiff(size_t n, double timestep, double diffusion, VecDev_t &in_x, VecDev_t &in_y, VecDev_t &in_z, VecDev_t &in_em, VecDev_t &in_hm):
-        fN(n),
-        fStep(timestep),
-        fDiff(diffusion),
-        fNPX(in_x.size()),
-        fNPY(in_y.size()),
-        fNPZ(in_z.size()),
-        xvec(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_x.data())),
-        yvec(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_y.data())),
-        zvec(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_z.data())),
-        vecem(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_em.data())),
-        vechm(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_hm.data()))
-        {}
-
-        // Copy constructor needs be __hydra_dual__ to be copyable
-        // on device and host sides, in the time of thread distribution.
-        // hydra, as well as thrust and std pass arguments by value.
-        // Obs.: RooFit passes by reference... (crazy design choice!)
-        __hydra_dual__
-        SetVeldiff( SetVeldiff const& other):
-        fN(other.fN),
-        fStep(other.fStep),
-        fDiff(other.fDiff),
-        fNPX(other.fNPX),
-        fNPY(other.fNPY),
-        fNPZ(other.fNPZ),
-        xvec(other.xvec),
-        yvec(other.yvec),
-        zvec(other.zvec),
-        vecem(other.vecem),
-        vechm(other.vechm)
-        { }
-        
-        
-        __hydra_dual__
-        SetVeldiff operator=( SetVeldiff const& other){
-            if(this == &other) return *this;
-
-            fN=other.fN;
-            fStep=other.fStep;
-            fDiff=other.fDiff;
-            fNPX=other.fNPX;
-            fNPY=other.fNPY;
-            fNPZ=other.fNPZ;
-            xvec=other.xvec;
-            yvec=other.yvec;
-            zvec=other.zvec;
-            vecem=other.vecem;
-            vechm=other.vechm;
-
-            return *this;
-        }
-
-        //function call operator needs to be callable in host and device sides 
-        // and be constant
-        template<typename Particle>
-        __hydra_dual__
-        void operator()(Particle p){
-            
-            //check if particle went outside the volume
-            if(hydra::get<_tc_isin>(p)<0) return;
-            
-            //get particle charge and initial position
-            double charge=hydra::get<_tc_charge>(p);
-            double mobility = 0;
-            double x=hydra::get<_tc_x>(p);
-            double y=hydra::get<_tc_y>(p);
-            double z=hydra::get<_tc_z>(p);
-            
-            double vvec[3];
-            size_t ind8[8];
-            getallindices(vvec, ind8, xvec, fNPX, yvec, fNPY, zvec, fNPZ, x, y, z);
-            
-            if(charge<0.) mobility=interpol(vvec, vecem, ind8);
-            else mobility=interpol(vvec, vechm, ind8);
-            
-            //calculate diffusion
-            double D = ::sqrt(2*(fDiff*mobility)*fStep);      //D=radice(2*kb*T*mu*dt/e)
-            double sx = D*hydra::get<_tc_gauss_x>(p);
-            double sy = D*hydra::get<_tc_gauss_y>(p);
-            double sz = D*hydra::get<_tc_gauss_z>(p);
-             
-             //spostamento in x
-            double alpha=hydra::get<_tc_angle_1>(p);
-            double beta=hydra::get<_tc_angle_2>(p);
-            double ax = cos(alpha)*cos(beta)*sx - sin(alpha)*sy - cos(alpha)*sin(beta)*sz;
-            //spostamento in y
-            double ay = sin(alpha)*cos(beta)*sx + cos(alpha)*sy - sin(alpha)*sin(beta)*sz;
-            //spostamento in z
-            double az = sin(beta)*sz + cos(beta)*sz;
-             
-            hydra::get<_tc_gauss_x>(p) = ax/fStep;
-            hydra::get<_tc_gauss_y>(p) = ay/fStep;
-            hydra::get<_tc_gauss_z>(p) = az/fStep;
-        }
-        
-        
-        size_t fN;
-        double fStep;
-        double fDiff;
-        size_t fNPX = 0;
-        size_t fNPY = 0;
-        size_t fNPZ = 0;
-        double *vecem = nullptr;
-        double *vechm = nullptr;
-        double *xvec = nullptr;
-        double *yvec = nullptr;
-        double *zvec = nullptr;
-    };
+    ApplyRamo  is  receiving and using pointers without testing the validity. 
     
-    
-    //functor to fill carrier drift velocities
-    struct SetVeldiff_multi
-    {
-
-        SetVeldiff_multi()=delete;                                         // avoid creating objects with undefined data
-        
-        // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        SetVeldiff_multi(size_t n, double timestep, double diffusion, VecDev_t &ine_x, VecDev_t &ine_y, VecDev_t &ine_z, VecDev_t &inh_x, VecDev_t &inh_y, VecDev_t &inh_z, VecDev_t &in_em, VecDev_t &in_hm):
-        fN(n),
-        fStep(timestep),
-        fDiff(diffusion),
-        fNPXe(ine_x.size()),
-        fNPYe(ine_y.size()),
-        fNPZe(ine_z.size()),
-        xvece(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(ine_x.data())),
-        yvece(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(ine_y.data())),
-        zvece(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(ine_z.data())),
-        fNPXh(inh_x.size()),
-        fNPYh(inh_y.size()),
-        fNPZh(inh_z.size()),
-        xvech(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(inh_x.data())),
-        yvech(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(inh_y.data())),
-        zvech(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(inh_z.data())),
-        vecem(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_em.data())),
-        vechm(HYDRA_EXTERNAL_NS::thrust::raw_pointer_cast(in_hm.data()))
-        {}
-
-        // Copy constructor needs be __hydra_dual__ to be copyable
-        // on device and host sides, in the time of thread distribution.
-        // hydra, as well as thrust and std pass arguments by value.
-        // Obs.: RooFit passes by reference... (crazy design choice!)
-        __hydra_dual__
-        SetVeldiff_multi( SetVeldiff_multi const& other):
-        fN(other.fN),
-        fStep(other.fStep),
-        fDiff(other.fDiff),
-        fNPXe(other.fNPXe),
-        fNPYe(other.fNPYe),
-        fNPZe(other.fNPZe),
-        xvece(other.xvece),
-        yvece(other.yvece),
-        zvece(other.zvece),
-        fNPXh(other.fNPXh),
-        fNPYh(other.fNPYh),
-        fNPZh(other.fNPZh),
-        xvech(other.xvech),
-        yvech(other.yvech),
-        zvech(other.zvech),
-        vecem(other.vecem),
-        vechm(other.vechm)
-        { }
-        
-        
-        __hydra_dual__
-        SetVeldiff_multi operator=( SetVeldiff_multi const& other){
-            if(this == &other) return *this;
-
-            fN=other.fN;
-            fStep=other.fStep;
-            fDiff=other.fDiff;
-            fNPXe=other.fNPXe;
-            fNPYe=other.fNPYe;
-            fNPZe=other.fNPZe;
-            xvece=other.xvece;
-            yvece=other.yvece;
-            zvece=other.zvece;
-            fNPXh=other.fNPXh;
-            fNPYh=other.fNPYh;
-            fNPZh=other.fNPZh;
-            xvech=other.xvech;
-            yvech=other.yvech;
-            zvech=other.zvech;
-            vecem=other.vecem;
-            vechm=other.vechm;
-
-            return *this;
-        }
-
-        //function call operator needs to be callable in host and device sides 
-        // and be constant
-        template<typename Particle>
-        __hydra_dual__
-        void operator()(Particle p){
-            
-            //check if particle went outside the volume
-            if(hydra::get<_tc_isin>(p)<0) return;
-            
-            //get particle charge and initial position
-            double charge=hydra::get<_tc_charge>(p);
-            double mobility = 0;
-            double x=hydra::get<_tc_x>(p);
-            double y=hydra::get<_tc_y>(p);
-            double z=hydra::get<_tc_z>(p);
-            
-            double vvec[3];
-            size_t ind8[8];
-            
-            if(charge<0.){
-                getallindices(vvec, ind8, xvece, fNPXe, yvece, fNPYe, zvece, fNPZe, x, y, z);
-                mobility=interpol(vvec, vecem, ind8);
-            }
-            else{
-                getallindices(vvec, ind8, xvech, fNPXh, yvech, fNPYh, zvech, fNPZh, x, y, z);
-                mobility=interpol(vvec, vechm, ind8);
-            }
-            
-            //calculate diffusion
-            double D = ::sqrt(2*(fDiff*mobility)*fStep);      //D=radice(2*kb*T*mu*dt/e)
-            double sx = D*hydra::get<_tc_gauss_x>(p);
-            double sy = D*hydra::get<_tc_gauss_y>(p);
-            double sz = D*hydra::get<_tc_gauss_z>(p);
-             
-             //spostamento in x
-            double alpha=hydra::get<_tc_angle_1>(p);
-            double beta=hydra::get<_tc_angle_2>(p);
-            double ax = cos(alpha)*cos(beta)*sx - sin(alpha)*sy - cos(alpha)*sin(beta)*sz;
-            //spostamento in y
-            double ay = sin(alpha)*cos(beta)*sx + cos(alpha)*sy - sin(alpha)*sin(beta)*sz;
-            //spostamento in z
-            double az = sin(beta)*sz + cos(beta)*sz;
-             
-            hydra::get<_tc_gauss_x>(p) = ax/fStep;
-            hydra::get<_tc_gauss_y>(p) = ay/fStep;
-            hydra::get<_tc_gauss_z>(p) = az/fStep;
-        }
-        
-        
-        size_t fN;
-        double fStep;
-        double fDiff;
-        size_t fNPXe = 0;
-        size_t fNPYe = 0;
-        size_t fNPZe = 0;
-        size_t fNPXh = 0;
-        size_t fNPYh = 0;
-        size_t fNPZh = 0;
-        double *vecem = nullptr;
-        double *vechm = nullptr;
-        double *xvece = nullptr;
-        double *yvece = nullptr;
-        double *zvece = nullptr;
-        double *xvech = nullptr;
-        double *yvech = nullptr;
-        double *zvech = nullptr;
-    };
-    
-    
+    */
     //calculate currents
     struct ApplyRamo
     {
 
         ApplyRamo()=delete;                                         // avoid creating objects with undefined data
 
+         /*
+         Review A.A.
+    
+         ApplyRamo ctor is  receiving and using pointers without testing the validity. 
+         */
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        ApplyRamo(size_t n, double timestep, double *in_x, size_t dim_x,double *in_y, size_t dim_y,double *in_z, size_t dim_z, double *in_xef,double *in_yef, double *in_zef, double *in_em, double *in_hm, double *in_xwf,double *in_ywf, double *in_zwf):
+        ApplyRamo(size_t n, double timestep, double diffusion, double *in_x, size_t dim_x,double *in_y, size_t dim_y,double *in_z, size_t dim_z, double *in_xef,double *in_yef, double *in_zef, double *in_em, double *in_hm, double *in_xwf,double *in_ywf, double *in_zwf):
         fN(n),
         fStep(timestep),
+        fDiff(diffusion),
         fNPX(dim_x),
         fNPY(dim_y),
         fNPZ(dim_z),
@@ -409,10 +151,12 @@ namespace evolve{
         zvecwf(in_zwf)
         {}
         
+        //
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        ApplyRamo(size_t n, double timestep, VecDev_t &in_x, VecDev_t &in_y, VecDev_t &in_z, VecDev_t &in_xef, VecDev_t &in_yef, VecDev_t &in_zef, VecDev_t &in_em, VecDev_t &in_hm, VecDev_t &in_xwf, VecDev_t &in_ywf, VecDev_t &in_zwf):
+        ApplyRamo(size_t n, double timestep, double diffusion, VecDev_t<double> &in_x, VecDev_t<double> &in_y, VecDev_t<double> &in_z, VecDev_t<double> &in_xef, VecDev_t<double> &in_yef, VecDev_t<double> &in_zef, VecDev_t<double> &in_em, VecDev_t<double> &in_hm, VecDev_t<double> &in_xwf, VecDev_t<double> &in_ywf, VecDev_t<double> &in_zwf):
         fN(n),
         fStep(timestep),
+        fDiff(diffusion),
         fNPX(in_x.size()),
         fNPY(in_y.size()),
         fNPZ(in_z.size()),
@@ -437,6 +181,7 @@ namespace evolve{
         ApplyRamo( ApplyRamo const& other):
         fN(other.fN),
         fStep(other.fStep),
+        fDiff(other.fDiff),
         fNPX(other.fNPX),
         fNPY(other.fNPY),
         fNPZ(other.fNPZ),
@@ -459,6 +204,7 @@ namespace evolve{
 
             fN=other.fN;
             fStep=other.fStep;
+            fDiff=other.fDiff;
             fNPX=other.fNPX;
             fNPY=other.fNPY;
             fNPZ=other.fNPZ;
@@ -477,6 +223,7 @@ namespace evolve{
             return *this;
         }
 
+        // FIXME: is not constant !
         //function call operator needs to be callable in host and device sides 
         // and be constant
         template<typename Particle>
@@ -518,9 +265,31 @@ namespace evolve{
             double k1y=charge*mobility*ey;
             double k1z=charge*mobility*ez;
             
-            double Vdriftx=k1x+hydra::get<_tc_gauss_x>(p);
-            double Vdrifty=k1y+hydra::get<_tc_gauss_y>(p);
-            double Vdriftz=k1z+hydra::get<_tc_gauss_z>(p);
+            //calculate diffusion velocity
+            double s = ::sqrt(2*(fDiff*mobility)/fStep)*hydra::get<_tc_gauss_x>(p);
+            
+            hydra::Vector3R direction(ex,ey,ez);
+            hydra::Vector3R ref(1.,0.,0.);
+            double theta = hydra::get<_tc_angle_2>(p);
+            double phi = hydra::get<_tc_angle_1>(p);
+            if(direction.d3mag()==0){
+                ref.set(s*sin(theta)*cos(phi),s*sin(theta)*sin(phi),s*cos(theta));
+            }
+            else{
+            
+                direction = direction.unit();
+                ref = (direction.cross(ref)).unit()*s;
+                //rotate ref
+                ref = ref*cos(phi) + (direction.cross(ref))*sin(phi)+direction*(direction.dot(ref))*(1-cos(phi));
+            }
+            
+            hydra::get<_tc_gauss_x>(p) = ref.get(0);
+            hydra::get<_tc_gauss_y>(p) = ref.get(1);
+            hydra::get<_tc_gauss_z>(p) = ref.get(2);
+            
+            double Vdriftx=k1x+ref.get(0);
+            double Vdrifty=k1y+ref.get(1);
+            double Vdriftz=k1z+ref.get(2);
             
 //             Vdrift=sqrt((Vdriftx*Vdriftx+Vdrifty*Vdrifty+Vdriftz*Vdriftz));
             
@@ -539,9 +308,11 @@ namespace evolve{
 
         }
         
-        
+        //FIXME: pointers initialized here and in the class ctors. Consider to enable the default ctor.
+        //anyway you never test the pointers for null.
         size_t fN;
         double fStep;
+        double fDiff;
         size_t fNPX = 0;
         size_t fNPY = 0;
         size_t fNPZ = 0;
@@ -558,17 +329,20 @@ namespace evolve{
         double *zvec   = nullptr;
     };
     
-    
+    //fixme: why not using the iterators instead of raw pointer?
+    // your only ctor is taking vectors ...
     //calculate currents
     struct ApplyRamo_multi
     {
 
+        //fixme: Actually you are anyway initliazing the struct with null-pointers 
         ApplyRamo_multi()=delete;                                         // avoid creating objects with undefined data
         
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        ApplyRamo_multi(size_t n, double timestep, VecDev_t &inef_x, VecDev_t &inef_y, VecDev_t &inef_z, VecDev_t &in_xef, VecDev_t &in_yef, VecDev_t &in_zef, VecDev_t &inem_x, VecDev_t &inem_y, VecDev_t &inem_z, VecDev_t &in_em, VecDev_t &inhm_x, VecDev_t &inhm_y, VecDev_t &inhm_z, VecDev_t &in_hm,  VecDev_t &inwf_x, VecDev_t &inwf_y, VecDev_t &inwf_z, VecDev_t &in_xwf, VecDev_t &in_ywf, VecDev_t &in_zwf):
+        ApplyRamo_multi(size_t n, double timestep, double diffusion, VecDev_t<double> &inef_x, VecDev_t<double> &inef_y, VecDev_t<double> &inef_z, VecDev_t<double> &in_xef, VecDev_t<double> &in_yef, VecDev_t<double> &in_zef, VecDev_t<double> &inem_x, VecDev_t<double> &inem_y, VecDev_t<double> &inem_z, VecDev_t<double> &in_em, VecDev_t<double> &inhm_x, VecDev_t<double> &inhm_y, VecDev_t<double> &inhm_z, VecDev_t<double> &in_hm,  VecDev_t<double> &inwf_x, VecDev_t<double> &inwf_y, VecDev_t<double> &inwf_z, VecDev_t<double> &in_xwf, VecDev_t<double> &in_ywf, VecDev_t<double> &in_zwf):
         fN(n),
         fStep(timestep),
+        fDiff(diffusion),
         fNPXef(inef_x.size()),
         fNPYef(inef_y.size()),
         fNPZef(inef_z.size()),
@@ -611,6 +385,7 @@ namespace evolve{
         ApplyRamo_multi( ApplyRamo_multi const& other):
         fN(other.fN),
         fStep(other.fStep),
+        fDiff(other.fDiff),
         fNPXef(other.fNPXef),
         fNPYef(other.fNPYef),
         fNPZef(other.fNPZef),
@@ -651,6 +426,7 @@ namespace evolve{
 
             fN=other.fN;
             fStep=other.fStep;
+            fDiff=other.fDiff;
             fNPXef=other.fNPXef;
             fNPYef=other.fNPYef;
             fNPZef=other.fNPZef;
@@ -734,10 +510,31 @@ namespace evolve{
             double k1x=charge*mobility*ex;
             double k1y=charge*mobility*ey;
             double k1z=charge*mobility*ez;
+            //calculate diffusion velocity
+            double s = sqrt(2*(fDiff*mobility)/fStep)*hydra::get<_tc_gauss_x>(p);
+            hydra::Vector3R direction(ex,ey,ez);
+            hydra::Vector3R ref(1.,0.,0.);
             
-            double Vdriftx=k1x+hydra::get<_tc_gauss_x>(p);
-            double Vdrifty=k1y+hydra::get<_tc_gauss_y>(p);
-            double Vdriftz=k1z+hydra::get<_tc_gauss_z>(p);
+            double theta = hydra::get<_tc_angle_2>(p);
+            double phi = hydra::get<_tc_angle_1>(p);
+            if(direction.d3mag()==0){
+                ref.set(s*sin(theta)*cos(phi),s*sin(theta)*sin(phi),s*cos(theta));
+            }
+            else{
+            
+                direction = direction.unit();
+                ref = (direction.cross(ref)).unit()*s;
+                //rotate ref
+                ref = ref*cos(phi) + (direction.cross(ref))*sin(phi)+direction*(direction.dot(ref))*(1-cos(phi));
+            }
+            
+            hydra::get<_tc_gauss_x>(p) = ref.get(0);
+            hydra::get<_tc_gauss_y>(p) = ref.get(1);
+            hydra::get<_tc_gauss_z>(p) = ref.get(2);
+            
+            double Vdriftx=k1x+ref.get(0);
+            double Vdrifty=k1y+ref.get(1);
+            double Vdriftz=k1z+ref.get(2);
             
 //             Vdrift=sqrt((Vdriftx*Vdriftx+Vdrifty*Vdrifty+Vdriftz*Vdriftz));
             
@@ -758,6 +555,7 @@ namespace evolve{
         
         size_t fN;
         double fStep;
+        double fDiff;
         size_t fNPXef = 0;
         size_t fNPYef = 0;
         size_t fNPZef = 0;
@@ -792,9 +590,10 @@ namespace evolve{
         double *zhmvec   = nullptr;
     };
     
+    //fixme: test pointer validity before to use!
     struct Evolve
     {
-
+       //fixme: Actually you are anyway initliazing the struct with null-pointers 
         Evolve()=delete;                                         // avoid creating objects with undefined data
 
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
@@ -815,7 +614,7 @@ namespace evolve{
         {}
         
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        Evolve(size_t n, double timestep, VecDev_t &in_x, VecDev_t &in_y, VecDev_t &in_z, VecDev_t &in_xef, VecDev_t &in_yef, VecDev_t &in_zef, VecDev_t &in_em, VecDev_t &in_hm):
+        Evolve(size_t n, double timestep, VecDev_t<double> &in_x, VecDev_t<double> &in_y, VecDev_t<double> &in_z, VecDev_t<double> &in_xef, VecDev_t<double> &in_yef, VecDev_t<double> &in_zef, VecDev_t<double> &in_em, VecDev_t<double> &in_hm):
         fN(n),
         fStep(timestep),
         fNPX(in_x.size()),
@@ -1023,7 +822,7 @@ namespace evolve{
         Evolve_multi()=delete;                                         // avoid creating objects with undefined data
         
         // No __hydra__dual__ here. Only allow objects to be constructed in host side. 
-        Evolve_multi(size_t n, double timestep, VecDev_t &inef_x, VecDev_t &inef_y, VecDev_t &inef_z, VecDev_t &in_xef, VecDev_t &in_yef, VecDev_t &in_zef, VecDev_t &inem_x, VecDev_t &inem_y, VecDev_t &inem_z, VecDev_t &in_em, VecDev_t &inhm_x, VecDev_t &inhm_y, VecDev_t &inhm_z, VecDev_t &in_hm, double _xmin, double _xmax, double _ymin, double _ymax, double _zmin, double _zmax):
+        Evolve_multi(size_t n, double timestep, VecDev_t<double> &inef_x, VecDev_t<double> &inef_y, VecDev_t<double> &inef_z, VecDev_t<double> &in_xef, VecDev_t<double> &in_yef, VecDev_t<double> &in_zef, VecDev_t<double> &inem_x, VecDev_t<double> &inem_y, VecDev_t<double> &inem_z, VecDev_t<double> &in_em, VecDev_t<double> &inhm_x, VecDev_t<double> &inhm_y, VecDev_t<double> &inhm_z, VecDev_t<double> &in_hm, double _xmin, double _xmax, double _ymin, double _ymax, double _zmin, double _zmax):
         fN(n),
         fStep(timestep),
         xmin(_xmin),
@@ -1325,3 +1124,4 @@ namespace evolve{
         double *zhmvec   = nullptr;
     };
 }
+#endif
