@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -28,16 +28,16 @@
 #ifndef MAIN_INL_
 #define MAIN_INL_
 
-#include <constants.h>
-#include <defaults.h>
-#include <utils.h>
-#include <datatypes.h>
+#include <details/constants.h>
+#include <details/defaults.h>
+#include <details/utils.h>
+#include <details/datatypes.h>
 #include <plotstyle.C>
 #include <loadfiles.h>
-#include <preparemaps.h>
+#include <maps/preparemaps.h>
 #include <analysis.h>
 //facilities
-#include <HydraSim.h>
+#include <simulation/HydraSim.h>
 
 int main(int argv, char** argc){
     
@@ -54,6 +54,7 @@ int main(int argv, char** argc){
     bool draw=DEFAULT_DRAW; 
     bool extrainfo=DEFAULT_EXTRAINFO; 
     size_t nparticles=DEFAULT_PARTICLES;
+    size_t group=DEFAULT_GROUP;
     size_t nsteps=DEFAULT_STEPS;
     double temperature=DEFAULT_T;
     double timestep=DEFAULT_TIME;
@@ -125,6 +126,8 @@ int main(int argv, char** argc){
         cmd.add(Zshift_Arg);
         TCLAP::ValueArg<double> Length_Arg("l", "Length","Deposit length", false, DEFAULT_LENGTH, "double");
         cmd.add(Length_Arg);
+        TCLAP::ValueArg<size_t> Ngroup_Arg("g", "group","Group particle", false, DEFAULT_GROUP, "size_t");
+        cmd.add(Ngroup_Arg);
         
         
         // Parse the argv array.
@@ -148,6 +151,7 @@ int main(int argv, char** argc){
         xshift = Xshift_Arg.getValue();
         yshift = Yshift_Arg.getValue();
         zshift = Zshift_Arg.getValue();
+        group  = Ngroup_Arg.getValue();
         length = Length_Arg.getValue();
         outputdir = Odir_Arg.getValue();
         PHYSMAPfile = PMap_Arg.getValue();
@@ -242,7 +246,8 @@ int main(int argv, char** argc){
         root_line_inl.add("Yshift",cfg::Setting::TypeFloat) = (float)yshift;
         root_line_inl.add("Zshift",cfg::Setting::TypeFloat) = (float)zshift;
         root_line_inl.add("Length",cfg::Setting::TypeFloat) = (float)length;
-        root_line_inl.add("BunchSize",cfg::Setting::TypeInt) = bunchsize;root.add("ef", cfg::Setting::TypeString) = EFfile;
+        root_line_inl.add("BunchSize",cfg::Setting::TypeInt) = bunchsize;
+        root_line_inl.add("group",cfg::Setting::TypeInt) = (int)group;
         
         
         

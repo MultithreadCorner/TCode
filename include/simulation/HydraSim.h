@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -24,7 +24,8 @@
  *  Created on: 12/11/2018
  *      Author: Andrea Contu
  */
-#include "Evolve.h"
+#include <simulation/Evolve.h>
+#include <simulation/simulation.h>
 
 void signal_simulation(cfg::Setting const& root, int icfg=-1){
     
@@ -40,114 +41,21 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     std::string outputdir=root["OutputDirectory"];
     mkdir(outputdir.c_str(),S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IROTH);
     
-    auto startmapload = std::chrono::high_resolution_clock::now();
+    //getting map configuration
+    maps::mapconfig _maps(root);
     
-//     size_t nl=countlines(physmap_path);
-    
-    //3d hist of efield
-    TH3D* h3=NULL;
-    
-    VecDev_t _xvec, _yvec, _zvec;
-    //efield vecs
-    VecDev_t _xvec_ef, _yvec_ef, _zvec_ef;
-    VecDev_t efieldvecx, efieldvecy, efieldvecz;
-    //wfield vecs
-    VecDev_t _xvec_wf, _yvec_wf, _zvec_wf;
-    VecDev_t wfieldvecx, wfieldvecy, wfieldvecz;
-    
-    //emob vecs
-    VecDev_t _xvec_emob, _yvec_emob, _zvec_emob;
-    VecDev_t emobvec;
-    
-    //hmob vecs
-    VecDev_t _xvec_hmob, _yvec_hmob, _zvec_hmob;
-    VecDev_t hmobvec;
-    
-    double _xmin=0, _xmax=0, _ymin=0, _ymax=0, _zmin=0, _zmax=0;
-    //load physics maps
-    
-    
-    bool multimap=true;
-    //get physicsmap path
-    if(root["PhysicsMaps"].exists("map")){  
-        
-        INFO_LINE("Loading single map")
-        multimap=false;
-        //get physicsmap path
-        std::string physmap_path=root["PhysicsMaps"]["map"];
-        maps::physmap<double,11> pm(physmap_path);
-        
-        pm.fillspacepoints<VecDev_t>(_xvec,_yvec,_zvec);
-        pm.fillallquantities<VecDev_t>(efieldvecx,efieldvecy,efieldvecz,emobvec,hmobvec,wfieldvecx,wfieldvecy,wfieldvecz);
-        
-        _xmin = *(pm.getx().begin());
-        _xmax = *(pm.getx().rbegin());
-        _ymin = *(pm.gety().begin());
-        _ymax = *(pm.gety().rbegin());
-        _zmin = *(pm.getz().begin());
-        _zmax = *(pm.getz().rbegin());
-        
-        for(auto cf:configlist){
-            if(std::get<bool>(cf.get("plot"))){
-                VecHost_t efieldvecx_host, efieldvecy_host, efieldvecz_host;
-                pm.fillvector<VecHost_t>(efieldvecx_host,efieldvecy_host,efieldvecz_host);
-                h3=analysis::getHist3DDraw( efieldvecx_host, efieldvecy_host, efieldvecz_host, pm.getx(),pm.gety(),pm.getz());
-                break;
-            }
+    #ifdef _ROOT_AVAILABLE_
+    //3d hist of efield if necessary
+    TH3D *h3 = new TH3D();
+    for(auto cf:configlist){
+        if(std::get<bool>(cf.get("plot"))){
+            _maps.getHist3D(h3,0);
+            break;
         }
     }
-    else{
-        if(root["PhysicsMaps"].exists("efield") && root["PhysicsMaps"].exists("wfield") && root["PhysicsMaps"].exists("emob") && root["PhysicsMaps"].exists("hmob")){
-            
-            INFO_LINE("Loading separate maps")
-            
-            std::string efieldmap_path=root["PhysicsMaps"]["efield"];
-            maps::physmap<double,6> efieldm(efieldmap_path); //E field is a vector
-            efieldm.fillspacepoints<VecDev_t>(_xvec_ef,_yvec_ef,_zvec_ef);
-            efieldm.fillvector<VecDev_t>(efieldvecx,efieldvecy,efieldvecz);
-            
-            for(auto cf:configlist){
-                if(std::get<bool>(cf.get("plot"))){
-                    VecHost_t efieldvecx_host, efieldvecy_host, efieldvecz_host;
-                    efieldm.fillvector<VecHost_t>(efieldvecx_host,efieldvecy_host,efieldvecz_host);
-                    h3=analysis::getHist3DDraw( efieldvecx_host, efieldvecy_host, efieldvecz_host, efieldm.getx(),efieldm.gety(),efieldm.getz());
-                    break;
-                }
-            }
-            
-            std::string wfieldmap_path=root["PhysicsMaps"]["wfield"];
-            maps::physmap<double,6> wfieldm(wfieldmap_path); // Weighting field is a vector
-            wfieldm.fillspacepoints<VecDev_t>(_xvec_wf,_yvec_wf,_zvec_wf);
-            wfieldm.fillvector<VecDev_t>(wfieldvecx,wfieldvecy,wfieldvecz);
-            
-            std::string emobmap_path=root["PhysicsMaps"]["emob"];
-            maps::physmap<double,4> emobm(emobmap_path); // Electron mobility is a scalar
-            emobm.fillspacepoints<VecDev_t>(_xvec_emob,_yvec_emob,_zvec_emob);
-            emobm.fillscalar<VecDev_t>(emobvec);
-            
-            std::string hmobmap_path=root["PhysicsMaps"]["hmob"];
-            maps::physmap<double,4> hmobm(hmobmap_path); // Hole mobility is a scalar
-            hmobm.fillspacepoints<VecDev_t>(_xvec_hmob,_yvec_hmob,_zvec_hmob);
-            hmobm.fillscalar<VecDev_t>(hmobvec);
-            
-            
-            _xmin = std::min(*(efieldm.getx().begin()),std::min(*(wfieldm.getx().begin()),std::min(*(emobm.getx().begin()),*(hmobm.getx().begin()))));
-            _xmax = std::max(*(efieldm.getx().rbegin()),std::max(*(wfieldm.getx().rbegin()),std::max(*(emobm.getx().rbegin()),*(hmobm.getx().rbegin()))));
-            _ymin = std::min(*(efieldm.gety().begin()),std::min(*(wfieldm.gety().begin()),std::min(*(emobm.gety().begin()),*(hmobm.gety().begin()))));
-            _ymax = std::max(*(efieldm.gety().rbegin()),std::max(*(wfieldm.gety().rbegin()),std::max(*(emobm.gety().rbegin()),*(hmobm.gety().rbegin()))));
-            _zmin = std::min(*(efieldm.getz().begin()),std::min(*(wfieldm.getz().begin()),std::min(*(emobm.getz().begin()),*(hmobm.getz().begin()))));
-            _zmax = std::max(*(efieldm.getz().rbegin()),std::max(*(wfieldm.getz().rbegin()),std::max(*(emobm.getz().rbegin()),*(hmobm.getz().rbegin()))));
-            
-            std::cout << MIDDLEROW << std::endl;
-            INFO_LINE("Volume boundaries: [ "<< _xmin << " < x < "<< _xmax << " ] micron, "<<"[ "<< _ymin << " < y < "<< _ymax <<" ] micron, "<<"[ "<< _xmin << " < x < "<< _xmax <<" ] micron")
-        }
-    }
+    #endif //_ROOT_AVAILABLE_
     
-    auto endmapload = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsedmapload = endmapload - startmapload;
-    INFO_LINE("Map(s) loaded in "<<elapsedmapload.count()<<" ms\n")
     
-
     INFO_LINE("Starting signal simulation...")
     std::cout << MIDDLEROW << std::endl;
     double simulationtime=0;
@@ -156,20 +64,18 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     
     RunningStateHost_t data_dinit;
     if(tmpfile==DEFAULT_PATH) data_dinit = loaddata::getDummy(  std::get<size_t>(configlist[0].get("nparticles")), 
-                                                                std::get<double>(configlist[0].get("length")));
+                                                                std::get<double>(configlist[0].get("length")),std::get<size_t>(configlist[0].get("group")));
     else data_dinit=loaddata::loadfile(tmpfile);
-    
-    
     
     size_t sim=0;
     for(auto cf:configlist){
     {
         std::cout << MIDDLEROW << std::endl;
         //get configuration
-        auto startconf = std::chrono::high_resolution_clock::now();
         auto bunchsize      =   std::get<size_t>(cf.get("bunchsize"));
         auto nparticles     =   std::get<size_t>(cf.get("nparticles"));
         auto nsteps         =   std::get<size_t>(cf.get("nsteps"));
+        auto group          =   std::get<size_t>(cf.get("group"));
         auto path           =   std::get<std::string>(cf.get("path"));
         auto nickname       =   std::get<std::string>(cf.get("nickname"));
         auto plot           =   std::get<bool>(cf.get("plot"));
@@ -183,13 +89,11 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         auto amp            =   std::get<double>(cf.get("amp"));
         auto length         =   std::get<double>(cf.get("length"));
         
-//         cf.Print();
-        
         auto start = std::chrono::high_resolution_clock::now();
         if(path!=tmpfile){
             tmpfile=path;
-            if(tmpfile==DEFAULT_PATH) data_dinit=loaddata::getDummy(nparticles,length);
-            else data_dinit=loaddata::loadfile(tmpfile);
+            if(tmpfile==DEFAULT_PATH) data_dinit=loaddata::getDummy(nparticles,length,group);
+            else data_dinit=loaddata::loadfile(tmpfile,group);
         }
         
         //create running state
@@ -208,7 +112,9 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         //fill running state with initial particles
         hydra::copy(hydra::make_range(data_dinit.begin(),data_dinit.begin()+nparticles),data_d); // with ranges
 
-        hydra::for_each(data_d, loaddata::Translate(xshift,yshift,zshift,_xmin,_xmax,_ymin,_ymax,_zmin,_zmax));
+        hydra::for_each(data_d, loaddata::Translate(xshift,yshift,zshift,std::get<0>(_maps.Boundaries()),std::get<1>(_maps.Boundaries()),
+                                                                    std::get<2>(_maps.Boundaries()),std::get<3>(_maps.Boundaries()),
+                                                                    std::get<4>(_maps.Boundaries()),std::get<5>(_maps.Boundaries())));
         
         //creating large host vector to copy bunches of dev vectors
         size_t stp=1;
@@ -223,7 +129,8 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         size_t rest = nsteps%bunchsize;
         
         INFO_LINE("Simulation "<<sim<<" ("<<nickname<<")")
-        INFO_LINE("Nparticles(dep. charge): "<<nparticles<<"("<< (double)(nparticles)*HCHARGE/2. <<" C)"<< ", Temperature "<< temperature << ", timestep "<<timestep)
+        if(group>1) INFO_LINE("Particles are grouped in "<< nparticles <<" bunches of "<<group);
+        INFO_LINE("Nparticles(dep. charge): "<<nparticles*group<<"("<< (double)(nparticles*group)*HCHARGE/2. <<" C)"<< ", Temperature "<< temperature << ", timestep "<<timestep)
         INFO_LINE("Nsteps: "<<nsteps)
 //         if(ampexp[sim]!=0.0) INFO_LINE("Amp_exp "<< cf.get("amp").getd() << ", Sigma_exp "<<cf.get("sig").getd())
         if(xshift!=0.0) INFO_LINE("shifted in x by "<<xshift<< " micron")
@@ -250,41 +157,36 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         {
         
             //for loop on all states in the universe
-            if(multimap){
+            if(_maps.ismulti()){
                 for(size_t id=0; id<=nsteps; id++){
                     double temperature_nmob = (((KB*temperature))/HCHARGE)*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
                     
                     Generator.SetSeed(std::rand());
                     Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
+                    
                     Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_y), data_d.end(_tc_gauss_y));
+                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
                     Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_z), data_d.end(_tc_gauss_z));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
+                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
                     
                     
-                    hydra::for_each(data_d, evolve::SetVeldiff_multi(niter,
-                                                    timestep,
-                                                    temperature_nmob,
-                                                    _xvec_emob, _yvec_emob, _zvec_emob,
-                                                    _xvec_hmob, _yvec_hmob, _zvec_hmob,
-                                                    emobvec,hmobvec));
-                    
-                    
-                    hydra::for_each(data_d, evolve::ApplyRamo_multi(niter,
+                    hydra::for_each(data_d, evolve::make_RamoCurrent(niter,
                                                                     timestep,
-                                                                    _xvec_ef, _yvec_ef, _zvec_ef, efieldvecx, efieldvecy, efieldvecz,
-                                                                    _xvec_emob, _yvec_emob, _zvec_emob, emobvec,
-                                                                    _xvec_hmob, _yvec_hmob, _zvec_hmob, hmobvec,
-                                                                    _xvec_wf, _yvec_wf, _zvec_wf, wfieldvecx, wfieldvecy, wfieldvecz));
+                                                                    temperature_nmob,
+                                                                    _maps.VecXEField(), _maps.VecYEField(), _maps.VecZEField(), _maps.EField(),
+                                                                    _maps.VecXEMob(), _maps.VecYEMob(), _maps.VecZEMob(), _maps.EMob(),
+                                                                    _maps.VecXHMob(), _maps.VecYHMob(), _maps.VecZHMob(), _maps.HMob(),
+                                                                    _maps.VecXWField(), _maps.VecYWField(), _maps.VecZWField(), _maps.WField()));
                     
                     //reducing data
+                    
+//                     auto int_curr = hydra::reduce ( hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)) | (analysis::_SelectChargeAndSec), ReducedTuple_init,analysis::_SumTuples);
+//                     auto int_curr = hydra::reduce ( hydra::transform (hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)), analysis::SelectChargeAndSec()), ReducedTuple_init,analysis::SumTuples());
                     auto int_curr=HYDRA_EXTERNAL_NS::thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
                     tp_currs.push_back(int_curr);
                     
+//                     auto int_curr=hydra::reduce(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),ReducedTuple_init, analysis::SumCarriers());
+//                     
                     if(extrainfo || plot){
                         hydra::copy(hydra::make_range(data_d.begin(_tc_charge,_tc_x,_tc_y,_tc_z,_tc_isin,_tc_curr,_tc_issec), data_d.end(_tc_charge,_tc_x,_tc_y,_tc_z,_tc_isin,_tc_curr,_tc_issec)), states[id%bunchsize]);
                         if(id!=0 && (id+1)%bunchsize==0){
@@ -297,13 +199,16 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
                     
                     if(niter==nsteps-1) break;
-
-                    hydra::for_each(data_d, evolve::Evolve_multi(niter,
-                                                            timestep,
-                                                            _xvec_ef, _yvec_ef, _zvec_ef, efieldvecx, efieldvecy, efieldvecz,
-                                                            _xvec_emob, _yvec_emob, _zvec_emob, emobvec,
-                                                            _xvec_hmob, _yvec_hmob, _zvec_hmob, hmobvec,
-                                                            _xmin,_xmax,_ymin,_ymax,_zmin,_zmax));
+                    
+                    hydra::for_each(data_d, evolve::make_Evolution(niter,
+                                                                    timestep,
+                                                                    _maps.VecXEField(), _maps.VecYEField(), _maps.VecZEField(), _maps.EField(),
+                                                                    _maps.VecXEMob(), _maps.VecYEMob(), _maps.VecZEMob(), _maps.EMob(),
+                                                                    _maps.VecXHMob(), _maps.VecYHMob(), _maps.VecZHMob(), _maps.HMob(),
+                                                                    std::get<0>(_maps.Boundaries()),std::get<1>(_maps.Boundaries()),
+                                                                    std::get<2>(_maps.Boundaries()),std::get<3>(_maps.Boundaries()),
+                                                                    std::get<4>(_maps.Boundaries()),std::get<5>(_maps.Boundaries())));
+                    
                     niter++;
                     
                     
@@ -315,32 +220,26 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
                     Generator.SetSeed(std::rand());
                     Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
+                    
                     Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_y), data_d.end(_tc_gauss_y));
+                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
                     Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_z), data_d.end(_tc_gauss_z));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 2*PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
+                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
                     
                     
-                    hydra::for_each(data_d, evolve::SetVeldiff(niter,
-                                                    timestep,
-                                                    temperature_nmob,
-                                                    _xvec, _yvec, _zvec,
-                                                    emobvec,hmobvec));
-                    
-                    
-                    hydra::for_each(data_d, evolve::ApplyRamo(niter,
+                    hydra::for_each(data_d, evolve::make_RamoCurrent(niter,
                                                                     timestep,
-                                                                    _xvec, _yvec, _zvec,
-                                                                    efieldvecx, efieldvecy, efieldvecz,
-                                                                    emobvec,hmobvec,
-                                                                    wfieldvecx, wfieldvecy, wfieldvecz));
+                                                                    temperature_nmob,
+                                                                    _maps.VecX(), _maps.VecY(), _maps.VecZ(), _maps.PhysMap()));
                     
                     //reducing data
+//                     auto int_curr = hydra::reduce ( hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)) | (analysis::_SelectChargeAndSec), ReducedTuple_init,analysis::_SumTuples);
+// //                     auto int_curr = hydra::reduce ( hydra::transform(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),analysis::SelectChargeAndSec()), ReducedTuple_init,analysis::SumTuples());
+// //                     auto r = reduce ( transform (data, functorT), init, functorR)
                     auto int_curr=HYDRA_EXTERNAL_NS::thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
+                    
+//                     auto int_curr=hydra::reduce(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),ReducedTuple_init,analysis::SumCarriers());
+                    
                     tp_currs.push_back(int_curr);
                     
                     if(extrainfo || plot){
@@ -356,11 +255,10 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
                     if(niter==nsteps-1) break;
 
-                    hydra::for_each(data_d, evolve::Evolve(niter,
-                                                            timestep,
-                                                            _xvec, _yvec, _zvec,
-                                                            efieldvecx, efieldvecy, efieldvecz,
-                                                            emobvec,hmobvec));
+                    hydra::for_each(data_d, evolve::make_Evolution(niter,
+                                                                    timestep,
+                                                                    _maps.VecX(), _maps.VecY(), _maps.VecZ(), _maps.PhysMap()));
+                    
                     niter++;
                     
                     

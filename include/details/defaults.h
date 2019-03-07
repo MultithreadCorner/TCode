@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  * 
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2019 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
@@ -22,12 +22,15 @@
  * defaults.h
  *
  *  Created on: 12/11/2018
- *      Author: Andrea Contu
+ *  Author: Andrea Contu
  */
+
+#ifndef __DEFAULTS_H__
+#define __DEFAULTS_H__
 
 //project name
 #define PROJECT_NAME "TCoDe"
-#define VERSION "0.1-alpha"
+#define VERSION "0.2-alpha"
 #define DEFAULT_FILE_NAME "none"
 
 //map code settings
@@ -61,4 +64,6 @@
 #define DEFAULT_X 0.                    //default deposit shift in x direction
 #define DEFAULT_Y 0.                    //default deposit shift in y direction
 #define DEFAULT_Z 0.                    //default deposit shift in z direction
+#define DEFAULT_GROUP 1                //default carrier grouping factor
 
+#endif
