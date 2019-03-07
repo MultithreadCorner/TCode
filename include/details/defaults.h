@@ -30,7 +30,7 @@
 
 //project name
 #define PROJECT_NAME "TCoDe"
-#define VERSION "0.1-alpha"
+#define VERSION "0.2-alpha"
 #define DEFAULT_FILE_NAME "none"
 
 //map code settings
