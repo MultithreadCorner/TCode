@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/164617844.svg)](https://zenodo.org/badge/latestdoi/164617844)
+
 <img src="logo_TCoDe.png" width="300">
 
 ## What is it?
