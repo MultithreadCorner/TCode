@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *   Copyright (C) 2018 Andrea Contu e Angelo Loi
+ *   Copyright (C) 2018-2020 Andrea Contu e Angelo Loi
  *
  *   This file is part of TCode software.
  *
