@@ -241,7 +241,7 @@ namespace evolve{
             auto Vdrift = k1 +ref;
             
             //calculate current with Ramo's theorem
-            hydra::get<5>(p)=hydra::get<_tc_charge>(p)*HCHARGE*(Vdrift.dot(wfvec));
+            hydra::get<5>(p)=hydra::get<_tc_charge>(p)*HCHARGE*(Vdrift.get(0)*wfvec.get(0)+Vdrift.get(1)*wfvec.get(1)+Vdrift.get(2)*wfvec.get(2));
         }
         
         size_t _fN;
@@ -373,7 +373,7 @@ namespace evolve{
             auto Vdrift = k1 +ref;
             
             //calculate current with Ramo's theorem
-            hydra::get<5>(p)=hydra::get<_tc_charge>(p)*HCHARGE*(Vdrift.dot(wfvec));
+            hydra::get<5>(p)=hydra::get<_tc_charge>(p)*HCHARGE*(Vdrift.get(0)*wfvec.get(0)+Vdrift.get(1)*wfvec.get(1)+Vdrift.get(2)*wfvec.get(2));
             
         }
         
