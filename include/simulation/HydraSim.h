@@ -61,6 +61,8 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     double simulationtime=0;
     
     std::string tmpfile=std::get<std::string>(configlist[0].get("path"));
+    size_t tmpparticles=std::get<size_t>(configlist[0].get("nparticles"));
+    size_t tmpgroup=std::get<size_t>(configlist[0].get("group"));
     
     RunningStateHost_t data_dinit;
     if(tmpfile==DEFAULT_PATH) data_dinit = loaddata::getDummy(  std::get<size_t>(configlist[0].get("nparticles")), 
@@ -90,7 +92,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         auto length         =   std::get<double>(cf.get("length"));
         
         auto start = std::chrono::high_resolution_clock::now();
-        if(path!=tmpfile){
+        if(path!=tmpfile || nparticles!=tmpparticles || group!=tmpgroup){
             tmpfile=path;
             if(tmpfile==DEFAULT_PATH) data_dinit=loaddata::getDummy(nparticles,length,group);
             else data_dinit=loaddata::loadfile(tmpfile,group);
@@ -269,6 +271,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
             }
         }
         
+        //information about process time
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> elapsed = end - start;
         std::cout << std::endl;
@@ -289,11 +292,13 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         settings["x shift"]=Form("%g #mu m",xshift);
         settings["y shift"]=Form("%g #mu m",yshift);
         settings["z shift"]=Form("%g #mu m",zshift);
+        
         if(!(extrainfo || plot)) analysis::AnalyseSim(tp_currs,timestep,settings);
         else{
             analysis::AnalyseSim(tp_currs,timestep,settings);
             analysis::ExtraPlots(states_host, tp_currs, h3, timestep, settings, extrainfo, plot);
         }
+        
         
     }
         sim++;
