@@ -29,6 +29,11 @@
 #define __PREPAREMAPS_H__
 
 #include <hydra/detail/Hash.h>
+
+#include <hydra/detail/external/hydra_thrust/iterator/iterator_traits.h>
+#include <hydra/detail/external/hydra_thrust/iterator/zip_iterator.h>
+#include <hydra/detail/external/hydra_thrust/find.h>
+
 using namespace hydra::placeholders;
 namespace maps{
 //     typedef hydra::tuple<double,double,double,double,double,double> tuplemap_t;
@@ -388,7 +393,7 @@ namespace maps{
                     for(auto pz:_gridz){
                         auto myhash=hydra::detail::hash_tuple(spacepoint_t(px,py,pz));
                         
-                        if((HYDRA_EXTERNAL_NS::thrust::find(_datahash.begin(),_datahash.end(), myhash))==_datahash.end()){
+                        if((hydra_thrust::find(_datahash.begin(),_datahash.end(), myhash))==_datahash.end()){
                         
                             fd[0]=px;
                             fd[1]=py;

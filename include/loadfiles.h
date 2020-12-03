@@ -28,13 +28,25 @@
 
 //Functions to load files
 
+#include <hydra/functions/UniformShape.h>
+
 using namespace hydra::placeholders;
+
+// using namespace hydra::arguments;
+// 
+// declarg(xvar, double);
 
 namespace loaddata{
 
     RunningStateHost_t getDummy(size_t nparticles, double length, size_t group=DEFAULT_GROUP){
         INFO_LINE("Generating deposit")
-        hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
+        
+        auto A = hydra::Parameter::Create().Name("A").Value(0.0);
+        auto B = hydra::Parameter::Create().Name("B").Value(length);
+        hydra_thrust::default_random_engine engine;
+        auto uniform   = hydra::UniformShape<double>(A,B);
+        
+//         hydra::random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
         size_t np=(nparticles<=0) ? MAXPARTICLES : nparticles;
 
         if(np==0) ERROR_LINE("Number of particles is zero! Check your configuration.")
@@ -53,10 +65,12 @@ namespace loaddata{
         //distribute them randomly in a line along Z
         if(length>0.){
             int seed=0;
-            Generator.SetSeed(seed); // IMPORTANT, otherwise the seed stays the same
-            Generator.Uniform(0., length, data_de.begin(_tc_z), data_de.end(_tc_z));
-            Generator.SetSeed(seed);
-            Generator.Uniform(0., length, data_dh.begin(_tc_z), data_dh.end(_tc_z));
+//             Generator.SetSeed(seed); // IMPORTANT, otherwise the seed stays the same
+//             Generator.Uniform(0., length, data_de.begin(_tc_z), data_de.end(_tc_z));
+//             Generator.SetSeed(seed);
+//             Generator.Uniform(0., length, data_dh.begin(_tc_z), data_dh.end(_tc_z));
+            hydra::fill_random(data_de.begin(_tc_z), data_de.end(_tc_z) , uniform,std::chrono::system_clock::now().time_since_epoch().count());
+            hydra::fill_random(data_dh.begin(_tc_z), data_dh.end(_tc_z) , uniform,std::chrono::system_clock::now().time_since_epoch().count());
         }
         hydra::copy(data_de,hydra::make_range(data_d.begin(),data_d.begin()+halfsize));
         hydra::copy(data_dh,hydra::make_range(data_d.begin()+halfsize,data_d.end()));

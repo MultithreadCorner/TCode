@@ -107,7 +107,10 @@ namespace deposit{
         //generate dummy deposit
         void gendummy(size_t nparticles, double length, size_t group=DEFAULT_GROUP){
             INFO_LINE("Generating deposit")
-            hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
+            auto A = hydra::Parameter::Create().Name("A").Value(0.0);
+            auto B = hydra::Parameter::Create().Name("B").Value(length);
+            hydra_thrust::default_random_engine engine;
+            auto uniform   = hydra::UniformShape<double>(A,B);
             size_t np=(nparticles<=0) ? MAXPARTICLES : nparticles;
             if(np==1){
                 _data=RunningStateHost_t(np,RunningTuple_t(std::copysign(1.,length),0.,0.,0., 0.,1.,0.,0.,0.,0.,0.,0.));
@@ -121,10 +124,8 @@ namespace deposit{
             //distribute them randomly in a line along Z
             if(length>0.){
                 int seed=0;
-                Generator.SetSeed(seed); // IMPORTANT, otherwise the seed stays the same
-                Generator.Uniform(0., length, data_de.begin(_tc_z), data_de.end(_tc_z));
-                Generator.SetSeed(seed);
-                Generator.Uniform(0., length, data_dh.begin(_tc_z), data_dh.end(_tc_z));
+                hydra::fill_random(data_de.begin(_tc_z), data_de.end(_tc_z) , uniform,seed);
+                hydra::fill_random(data_dh.begin(_tc_z), data_dh.end(_tc_z) , uniform,seed);
             }
             hydra::copy(data_de,hydra::make_range(_data.begin(),_data.begin()+halfsize));
             hydra::copy(data_dh,hydra::make_range(_data.begin()+halfsize,_data.end()));

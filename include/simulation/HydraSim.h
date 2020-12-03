@@ -27,6 +27,8 @@
 #include <simulation/Evolve.h>
 #include <simulation/simulation.h>
 
+#include <hydra/functions/Gaussian.h>
+
 void signal_simulation(cfg::Setting const& root, int icfg=-1){
     
     //configuration list
@@ -138,8 +140,20 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         if(zshift!=0.0) INFO_LINE("shifted in z by "<<zshift<< " micron")
         if((extrainfo || plot)) INFO_LINE("Requested "<<nsteps<< " steps. Dividing into "<< nbunches << " bunches of "<<bunchsize<<" steps plus one of "<< rest << " steps")
         
-    
-        hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
+        
+        auto A = hydra::Parameter::Create().Name("A").Value(0.0);
+        auto B = hydra::Parameter::Create().Name("B").Value(PI);
+        auto C = hydra::Parameter::Create().Name("C").Value(2*PI);
+        
+        auto uniform_theta   = hydra::UniformShape<double>(A,B);
+        auto uniform_phi   = hydra::UniformShape<double>(A,C);
+        
+        auto mean  = hydra::Parameter::Create("mean" ).Value(0.0);
+        auto sigma = hydra::Parameter::Create("sigma").Value(1.0);
+        
+        auto gauss     = hydra::Gaussian<double>(mean, sigma);
+        
+//         hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
         
         
         size_t niter=0;
@@ -161,13 +175,9 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                 for(size_t id=0; id<=nsteps; id++){
                     double temperature_nmob = (((KB*temperature))/HCHARGE)*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
                     
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
-                    
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
+                    hydra::fill_random(data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x) , gauss,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1) , uniform_phi,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2) , uniform_theta,std::rand());
                     
                     
                     hydra::for_each(data_d, evolve::make_RamoCurrent(niter,
@@ -182,7 +192,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
 //                     auto int_curr = hydra::reduce ( hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)) | (analysis::_SelectChargeAndSec), ReducedTuple_init,analysis::_SumTuples);
 //                     auto int_curr = hydra::reduce ( hydra::transform (hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)), analysis::SelectChargeAndSec()), ReducedTuple_init,analysis::SumTuples());
-                    auto int_curr=HYDRA_EXTERNAL_NS::thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
+                    auto int_curr=hydra_thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
                     tp_currs.push_back(int_curr);
                     
 //                     auto int_curr=hydra::reduce(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),ReducedTuple_init, analysis::SumCarriers());
@@ -218,13 +228,9 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                 for(size_t id=0; id<=nsteps; id++){
                     double temperature_nmob = (((KB*temperature))/HCHARGE)*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
                     
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
-                    
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
+                    hydra::fill_random(data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x) , gauss,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1) , uniform_phi,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2) , uniform_theta,std::rand());
                     
                     
                     hydra::for_each(data_d, evolve::make_RamoCurrent(niter,
@@ -236,7 +242,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
 //                     auto int_curr = hydra::reduce ( hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)) | (analysis::_SelectChargeAndSec), ReducedTuple_init,analysis::_SumTuples);
 // //                     auto int_curr = hydra::reduce ( hydra::transform(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),analysis::SelectChargeAndSec()), ReducedTuple_init,analysis::SumTuples());
 // //                     auto r = reduce ( transform (data, functorT), init, functorR)
-                    auto int_curr=HYDRA_EXTERNAL_NS::thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
+                    auto int_curr=hydra_thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
                     
 //                     auto int_curr=hydra::reduce(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),ReducedTuple_init,analysis::SumCarriers());
                     
