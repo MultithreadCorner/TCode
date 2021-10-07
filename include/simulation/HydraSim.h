@@ -62,12 +62,6 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     std::cout << MIDDLEROW << std::endl;
     double simulationtime=0;
     
-    std::string tmpfile=std::get<std::string>(configlist[0].get("path"));
-    
-    RunningStateHost_t data_dinit;
-    if(tmpfile==DEFAULT_PATH) data_dinit = loaddata::getDummy(  std::get<size_t>(configlist[0].get("nparticles")), 
-                                                                std::get<double>(configlist[0].get("length")),std::get<size_t>(configlist[0].get("group")));
-    else data_dinit=loaddata::loadfile(tmpfile);
     
     size_t sim=0;
     for(auto cf:configlist){
@@ -91,16 +85,19 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         auto amp            =   std::get<double>(cf.get("amp"));
         auto length         =   std::get<double>(cf.get("length"));
         
+
+       
         auto start = std::chrono::high_resolution_clock::now();
-        if(path!=tmpfile){
-            tmpfile=path;
-            if(tmpfile==DEFAULT_PATH) data_dinit=loaddata::getDummy(nparticles,length,group);
-            else data_dinit=loaddata::loadfile(tmpfile,group);
-        }
         
+    
+        RunningStateHost_t data_dinit;
+        if(path==DEFAULT_PATH) data_dinit = loaddata::getDummy(  std::get<size_t>(cf.get("nparticles")), 
+                                                                    std::get<double>(cf.get("length")),std::get<size_t>(cf.get("group")));
+        else data_dinit=loaddata::loadfile(path);
+
         //create running state
 
-        if(nparticles==0 || nparticles>data_dinit.size()) nparticles=data_dinit.size();
+
 
         //create running state
         RunningState_t data_d(nparticles,RunningTuple_init); // running state
@@ -111,6 +108,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         CurrentVec_t tp_currs;
         
         
+
         //fill running state with initial particles
         hydra::copy(hydra::make_range(data_dinit.begin(),data_dinit.begin()+nparticles),data_d); // with ranges
 
