@@ -13,7 +13,7 @@ TCode uses external 3D maps of electric fields, carrier mobilities and weighting
 TCode depends on [ROOT >= v.6.14](https://github.com/root-project/root), [libconfig >= v1.5](https://hyperrealm.github.io/libconfig/), [TCLAP >= v1.2.1](http://tclap.sourceforge.net/) and optionally  [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) (needed for nVidia GPUs).
 
 ## Manual
-IN PREPARATION
+### Parameter file
 
 ## Authors
 TCode was created by [Andrea Contu](https://github.com/acontu) and [Angelo Loi](https://github.com/angeloloi19).
