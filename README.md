@@ -18,12 +18,13 @@ Every simulation is set by defining its parameters on the configuration file. Ea
 1. OutputDirectory: This output sets the folder where all the results of the simulations will be stored
    `OutputDirectory = "/path/to/output"`
 3. PhysicsMaps: This section contains the paths where the physics maps are stored. It is possibile to call a single physics file which contains all needed physics or 4 different files which contains the electric field (efield), wheighting field (wfield), electron mobility (emob) and hole mobility (hmob).
-   `PhysicsMaps:{
+   ```PhysicsMaps:{
      efield  =  "path/to/efield_map"
      wfield  =  "path/to/wfield_map"
      emob    =  "path/to/emob_map"
      hmob    =  "path/to/hmob_map"
-   }`
+   }```
+   
 5. InputData: This section sets the name of every single simulation, its parameters like the timestep and the number of time steps. Furthermore InputData defines the energy deposit and how it is build.   
 
 ## Authors
