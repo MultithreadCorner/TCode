@@ -45,11 +45,10 @@ Every simulation is set by defining its parameters on the configuration file. Ea
       process    = true;
       extrainfo  = false;
       T          = 300.;
+      group      = 1;
       path       = "path/to/energyDeposit.dat"
       customdeposit = "NO";
       particles  = 0;
-      Aexpl      = 0.;
-      Sexpl      = 5e-12;
       Xshift     = 2.;
       Yshift     = 2.;
       Zshift     = 0.;
@@ -58,7 +57,17 @@ Every simulation is set by defining its parameters on the configuration file. Ea
       }
    }
    ```
-
+### The parameters
+1. `name`(string):    is the nickname for the simulation
+2. `path`(string):    indicates the path where the specifications of the energy deposit are located
+3. `plot`(bool):      if `true` generates a gif containing charge drift and signal plotting (timeconsuming!)
+4. `extrainfo`(bool): generates snapshots for all simulation steps (timeconsuming!)
+5. `steps`:           Indicates the number of timesteps required to run the transient simulation
+6. `timestep`:        Is the minimum advancement in time requested for the transient simulation
+7. `particles`:       Is the number of particles requested for the dummy deposit (if path is activated, particles does not work).
+8. `X/Y/Zshift`:      Allows to shift (in micrometres) the energy deposit (imported or dummy).
+9. `Length`:          Lenght of the dummy deposit (does not work if path activated).
+10. `group`:          Allows group a large number of electron hole pairs. 
 ## Authors
 TCode was created by [Andrea Contu](https://github.com/acontu) and [Angelo Loi](https://github.com/angeloloi19).
 
