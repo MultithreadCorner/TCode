@@ -26,13 +26,38 @@ Every simulation is set by defining its parameters on the configuration file. Ea
      hmob    =  "path/to/hmob_map"
    }
    ```
-The alternative with the all-physics maps is called with the keyword `map`:
+   The alternative with the all-physics maps is called with the keyword `map`:
    ```
    PhysicsMaps:{
      map  =  "path/to/physics_map"
    }
    ```
-5. InputData: This section sets the name of every single simulation, its parameters like the timestep and the number of time steps. Furthermore InputData defines the energy deposit and how it is build.   
+5. InputData: This section sets the name of every single simulation, its parameters like the timestep and the number of time steps. Furthermore InputData defines the energy deposit and how it is build. 
+   ```
+   InputData:
+   {
+      SimulationName:
+      {
+      name       = "SimulationName";
+      steps      = 100;
+      timestep   = 1e-12;
+      plot       = false;
+      process    = true;
+      extrainfo  = false;
+      T          = 300.;
+      path       = "path/to/energyDeposit.dat"
+      customdeposit = "NO";
+      particles  = 0;
+      Aexpl      = 0.;
+      Sexpl      = 5e-12;
+      Xshift     = 2.;
+      Yshift     = 2.;
+      Zshift     = 0.;
+      Length     = 100.;
+      BunchSize  = 600; 
+      }
+   }
+   ```
 
 ## Authors
 TCode was created by [Andrea Contu](https://github.com/acontu) and [Angelo Loi](https://github.com/angeloloi19).
