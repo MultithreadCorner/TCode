@@ -26,7 +26,12 @@ Every simulation is set by defining its parameters on the configuration file. Ea
      hmob    =  "path/to/hmob_map"
    }
    ```
-   
+The alternative with the all-physics maps is called with the keyword `map`:
+   ```
+   PhysicsMaps:{
+     map  =  "path/to/physics_map"
+   }
+   ```
 5. InputData: This section sets the name of every single simulation, its parameters like the timestep and the number of time steps. Furthermore InputData defines the energy deposit and how it is build.   
 
 ## Authors
