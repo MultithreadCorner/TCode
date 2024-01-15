@@ -138,6 +138,90 @@ namespace analysis{
     
     void AnalyseSim(std::vector<ReducedTuple_t> &tp_currs, double timestep, std::map<std::string,std::string> settings){
         
+        INFO_LINE("Writing .dat file")
+        
+        std::ofstream myfile;
+        myfile.open(Form("%s/%s.dat",settings["outputdir"].c_str(),settings["name"].c_str()));
+           
+        double t_ec=0, t_hc=0, t_tc=0, t_time=0, t_einduced=0, t_hinduced=0, t_tinduced=0, t_elost=0, t_hlost=0, t_tlost=0;
+        double t_ec_sec=0, t_hc_sec=0, t_tc_sec=0, t_einduced_sec=0, t_hinduced_sec=0, t_tinduced_sec=0, t_elost_sec=0, t_hlost_sec=0, t_tlost_sec=0;
+                        
+        double currmax=-999999;
+        double chargemax=-999999;
+        double currmin=-0;
+        double chargemin=-0;
+        unsigned pl=0;
+        
+        for(auto& curr:tp_currs){
+                        
+            double ce=hydra::get<1>(curr);
+            double ch=hydra::get<0>(curr);
+            double ct=ce+ch;
+            double ce_sec=hydra::get<3>(curr);
+            double ch_sec=hydra::get<2>(curr);
+            double ct_sec=ce_sec+ch_sec;
+          
+            t_ec=ce;
+            t_hc=ch;
+            t_tc=ct;
+            t_ec_sec=ce_sec;
+            t_hc_sec=ch_sec;
+            t_tc_sec=ct_sec;
+            
+            t_elost=hydra::get<5>(curr);
+            t_hlost=hydra::get<4>(curr);
+            t_tlost=t_elost+t_hlost;
+            t_elost_sec=hydra::get<7>(curr);
+            t_hlost_sec=hydra::get<6>(curr);
+            t_tlost_sec=t_elost_sec+t_hlost_sec;
+            
+            
+            myfile<<pl*(timestep/UTIME)<<" "<<ch+ce<<" "<<ce<<" "<<ch<<" "<<ce_sec+ch_sec<<" "<<ce_sec<<" "<<ch_sec<<"\n";
+            
+                       
+            if(ct>currmax) currmax=ct;
+            if(ct<currmin) currmin=ct;
+            t_time=pl*timestep;
+            t_einduced+=t_ec*timestep;
+            t_hinduced+=t_hc*timestep;
+            t_tinduced+=t_tc*timestep;
+            
+            t_einduced_sec+=t_ec_sec*timestep;
+            t_hinduced_sec+=t_hc_sec*timestep;
+            t_tinduced_sec+=t_tc_sec*timestep;
+            
+            if(t_tinduced>chargemax) chargemax=t_tinduced;
+            if(t_tinduced<chargemin) chargemin=t_tinduced;
+            
+            
+            pl++;
+            
+        }
+        
+        INFO_LINE("Max Current: "<<currmax<<" A")
+        INFO_LINE("Int Charge: "<<t_tinduced<<" C")
+        
+        std::cout << std::endl;
+                 
+        //write settings
+       
+        myfile.close();
+        
+        /*
+        *********************************************************************
+        *********************************************************************
+        *********************************************************************
+        *********************************************************************
+        *********************************************************************
+        */
+        
+        
+        
+        
+        
+        /*
+     
+        
         INFO_LINE("Analysing simulation...")
         
         TFile *outf=new TFile(Form("%s/%s.root",settings["outputdir"].c_str(),settings["name"].c_str()),"RECREATE");
@@ -397,8 +481,14 @@ namespace analysis{
         delete gtind, geind, ghind;
         delete gtlost, gelost, ghlost;
         delete legc;
-        delete cancurr;
+        delete cancurr;*/
     }
+    
+    
+    
+    
+    
+    
     
     void ExtraPlots(UniverseHost_t states, std::vector<ReducedTuple_t> &tp_currs, TH3D* hdraw, double timestep, std::map<std::string,std::string> settings, bool storeextra=true, bool drawgif=false){
         
@@ -412,7 +502,7 @@ namespace analysis{
             std::remove(Form("%s/%s.gif",settings["outputdir"].c_str(),settings["name"].c_str()));
         }
         
-        TFile *outf=new TFile(Form("%s/%s.root",settings["outputdir"].c_str(),settings["name"].c_str()),"UPDATE");
+        TFile *outf=new TFile(Form("%s/%s.dat",settings["outputdir"].c_str(),settings["name"].c_str()),"UPDATE");
         double t_ec=0, t_hc=0, t_tc=0, t_einduced=0, t_hinduced=0, t_tinduced=0;
         double t_ec_sec=0, t_hc_sec=0, t_tc_sec=0, t_einduced_sec=0, t_hinduced_sec=0, t_tinduced_sec=0;
         
