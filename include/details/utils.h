@@ -23,6 +23,8 @@
  *
  *  Created on: 12/11/2018
  *  Author: Andrea Contu
+ *  Updated on: 15/01/2024
+ *  Author: Angelo Loi
  */
 
 #ifndef UTILS_H_
@@ -65,7 +67,7 @@ if(flag){\
 #include <hydra/device/System.h>
 #include <hydra/host/System.h>
 #include <hydra/Function.h>
-#include <hydra/FunctionWrapper.h>
+// #include <hydra/FunctionWrapper.h>
 #include <hydra/Random.h>
 #include <hydra/Algorithm.h>
 #include <hydra/Tuple.h>
@@ -228,12 +230,16 @@ public:
 std::vector<singleconf> FillOneConfig(cfg::Setting const& root, int icfg){
         std::vector<singleconf> sets;
         
-        std::string file_single_config, file_single_name_config;
+        std::string file_single_config, file_single_name_config, custom;
         bool draw_config=false, extrainfo_config=false;
         int bunchsize_config;
         std::vector<size_t> nsteps_config, nparticles_config, group_config;
         std::vector<double> temperature_config, timestep_config, ampexp_config, sigmaexp_config, xshift_config, yshift_config, zshift_config, length_config;
-        if(root["InputData"][icfg].exists("path")) root["InputData"][icfg].lookupValue("path",file_single_config);
+        
+	if(root["InputData"][icfg].exists("customdeposit")) root["InputData"][icfg].lookupValue("customdeposit",custom);	//<<----nuovo
+        else custom=DEFAULT_DEPOSIT_BUILD;
+	
+	if(root["InputData"][icfg].exists("path")) root["InputData"][icfg].lookupValue("path",file_single_config);
         else file_single_config=DEFAULT_PATH;
         
         if(root["InputData"][icfg].exists("name")) root["InputData"][icfg].lookupValue("name",file_single_name_config);
@@ -314,6 +320,7 @@ std::vector<singleconf> FillOneConfig(cfg::Setting const& root, int icfg){
                                                 for(auto gr:group_config){
                                                     singleconf tmpconf;
                                                     tmpconf.set("path",file_single_config);
+						    tmpconf.set("customdeposit",custom);
                                                     tmpconf.set("nickname",file_single_name_config+"_"+std::to_string(count));
                                                     tmpconf.set("plot",draw_config);
                                                     tmpconf.set("extrainfo",extrainfo_config);
