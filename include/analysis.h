@@ -23,6 +23,8 @@
  *
  *  Created on: 12/11/2018
  *  Author: Andrea Contu
+ *  Updated on: 15/01/2024
+ *  Author: Angelo Loi
  */
 
 #ifndef __ANALYSIS_H__
