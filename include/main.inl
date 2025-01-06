@@ -23,6 +23,8 @@
  *
  *  Created on: 12/11/2018
  *      Author: Andrea Contu
+ *  Updated on: 15/01/2024
+ *      Author: Angelo Loi
  */
 
 #ifndef MAIN_INL_
@@ -47,7 +49,7 @@ int main(int argv, char** argc){
     cfg::Config Cfg;
     
     std::string cfg_file_name = "settings.cfg";
-    std::string EFfile=DEFAULT_FILE_NAME,WFfile=DEFAULT_FILE_NAME,EMOBfile=DEFAULT_FILE_NAME,HMOBfile=DEFAULT_FILE_NAME,PHYSMAPfile=DEFAULT_FILE_NAME;
+    std::string EFfile=DEFAULT_FILE_NAME,WFfile=DEFAULT_FILE_NAME,EMOBfile=DEFAULT_FILE_NAME,HMOBfile=DEFAULT_FILE_NAME,PHYSMAPfile=DEFAULT_FILE_NAME; //, custom=DEFAULT_DEPOSIT_BUILD;
     int icfg=-1;
     std::string outputdir="output";
     bool isconfig=false;
@@ -66,6 +68,7 @@ int main(int argv, char** argc){
     double zshift = DEFAULT_Z;
     double length = DEFAULT_LENGTH;
     std::string file_single=DEFAULT_PATH;
+    std::string custom=DEFAULT_DEPOSIT_BUILD; //<-- nuovo
     std::string file_single_name="InlineSim";
     //-------------------------
     // command line arguments
@@ -84,6 +87,11 @@ int main(int argv, char** argc){
         cmd.add(PMap_Arg);
         TCLAP::ValueArg<std::string> EFfile_Arg("", "efield","Electric field map", false, EFfile.c_str(), "string");
         cmd.add(EFfile_Arg);
+	
+	TCLAP::ValueArg<std::string> Custom_Arg("", "customdeposit","Energy deposit build algorithm", false, custom.c_str(), "string");	//<-- nuovo
+        cmd.add(Custom_Arg);
+	
+	
         TCLAP::ValueArg<std::string> EMOBfile_Arg("", "emob","Electron mobility map", false, EMOBfile.c_str(), "string");
         cmd.add(EMOBfile_Arg);
         TCLAP::ValueArg<std::string> HMOBfile_Arg("", "hmob","Hole mobility map", false, HMOBfile.c_str(), "string");
@@ -156,8 +164,11 @@ int main(int argv, char** argc){
         outputdir = Odir_Arg.getValue();
         PHYSMAPfile = PMap_Arg.getValue();
         
+	custom = Custom_Arg.getValue();   //<-- new
+	
         EFfile = EFfile_Arg.getValue();
-        WFfile = WFfile_Arg.getValue(); 
+	
+	WFfile = WFfile_Arg.getValue(); 
         EMOBfile = EMOBfile_Arg.getValue();
         HMOBfile = HMOBfile_Arg.getValue();
         
@@ -223,6 +234,9 @@ int main(int argv, char** argc){
         cfg::Setting & root_line_maps = root["PhysicsMaps"];
         if(PHYSMAPfile!="none") root_line_maps.add("map",cfg::Setting::TypeString) = PHYSMAPfile;
         if(EFfile!="none") root_line_maps.add("efield", cfg::Setting::TypeString) = EFfile;
+	
+        if(custom!="none") root_line_maps.add("customdeposit", cfg::Setting::TypeString) = custom; //<-- new
+	
         if(WFfile!="none") root_line_maps.add("wfield", cfg::Setting::TypeString) = WFfile;
         if(EMOBfile!="none") root_line_maps.add("emob", cfg::Setting::TypeString) = EMOBfile;
         if(HMOBfile!="none") root_line_maps.add("hmob", cfg::Setting::TypeString) = HMOBfile;

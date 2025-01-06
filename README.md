@@ -12,6 +12,19 @@ TCode uses external 3D maps of electric fields, carrier mobilities and weighting
 ## Dependencies
 TCode depends on [ROOT >= v.6.14](https://github.com/root-project/root), [libconfig >= v1.5](https://hyperrealm.github.io/libconfig/), [TCLAP >= v1.2.1](http://tclap.sourceforge.net/) and optionally  [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) (needed for nVidia GPUs).
 
+## Build application
+To generate executables to run on nVidia GPUs you also need an installation of [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) and to use a [compatible GCC version](https://docs.nvidia.com/cuda/).
+
+Build TCode following the instructions below:
+1. clone the git repository: `git clone https://github.com/MultithreadCorner/TCode.git`
+2. go to TCode directory: `cd TCode`
+3. create a build directory: `mkdir build` 
+4. go to build directory cd `build`
+5. run cmake specifying the path to Hydra: `cmake -DHYDRA_INCLUDE_DIR='path-to-hydra'../`
+6. compile (all backends): `make -j8`
+
+Several executables, separate for each available backend (CPP, TBB, OMP and CUDA) will be generated in the build directory.
+
 ## Manual
 ### Parameter file
 Every simulation is set by defining its parameters on the configuration file. Each configuration file has 3 main sections:

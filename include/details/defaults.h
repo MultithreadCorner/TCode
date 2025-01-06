@@ -23,6 +23,8 @@
  *
  *  Created on: 12/11/2018
  *  Author: Andrea Contu
+ *  Updated on: 15/01/2024
+ *  Author: Angelo Loi
  */
 
 #ifndef __DEFAULTS_H__
@@ -57,13 +59,14 @@
 #define DEFAULT_BUNCHSIZE 600           //bunch size (if gif animation or extra info requested). Timesteps are processed in bunches to avoid excessive memory usage
 #define DEFAULT_AMP 0.                  //not used
 #define DEFAULT_SIGMA 1.                //not used
-#define DEFAULT_LENGTH 1.               //default deposit lenght for dummy deposit
+#define DEFAULT_LENGTH 10.              //default deposit lenght for dummy deposit
 #define DEFAULT_PATH "dummy"            //default deposit path (DO NOT CHANGE)
 #define DEFAULT_DRAW false              //plot gif animation?
 #define DEFAULT_EXTRAINFO false         //request full info dumping?
 #define DEFAULT_X 0.                    //default deposit shift in x direction
 #define DEFAULT_Y 0.                    //default deposit shift in y direction
 #define DEFAULT_Z 0.                    //default deposit shift in z direction
-#define DEFAULT_GROUP 1                //default carrier grouping factor
+#define DEFAULT_GROUP 1                 //default carrier grouping factor
+#define DEFAULT_DEPOSIT_BUILD "NO"	//default deposit build up
 
 #endif

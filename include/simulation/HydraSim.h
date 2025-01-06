@@ -23,9 +23,13 @@
  *
  *  Created on: 12/11/2018
  *      Author: Andrea Contu
+ *  Updated on: 15/01/2024
+ *      Author:	Angelo Loi
  */
 #include <simulation/Evolve.h>
 #include <simulation/simulation.h>
+
+#include <hydra/functions/Gaussian.h>
 
 void signal_simulation(cfg::Setting const& root, int icfg=-1){
     
@@ -56,18 +60,10 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
     #endif //_ROOT_AVAILABLE_
     
     
-    INFO_LINE("Starting signal simulation...")
+    INFO_LINE("Starting signal simulation now...")
     std::cout << MIDDLEROW << std::endl;
     double simulationtime=0;
     
-    std::string tmpfile=std::get<std::string>(configlist[0].get("path"));
-    size_t tmpparticles=std::get<size_t>(configlist[0].get("nparticles"));
-    size_t tmpgroup=std::get<size_t>(configlist[0].get("group"));
-    
-    RunningStateHost_t data_dinit;
-    if(tmpfile==DEFAULT_PATH) data_dinit = loaddata::getDummy(  std::get<size_t>(configlist[0].get("nparticles")), 
-                                                                std::get<double>(configlist[0].get("length")),std::get<size_t>(configlist[0].get("group")));
-    else data_dinit=loaddata::loadfile(tmpfile);
     
     size_t sim=0;
     for(auto cf:configlist){
@@ -80,6 +76,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         auto group          =   std::get<size_t>(cf.get("group"));
         auto path           =   std::get<std::string>(cf.get("path"));
         auto nickname       =   std::get<std::string>(cf.get("nickname"));
+        auto custom         =   std::get<std::string>(cf.get("customdeposit"));//<------aggiuntoi
         auto plot           =   std::get<bool>(cf.get("plot"));
         auto extrainfo      =   std::get<bool>(cf.get("extrainfo"));
         auto temperature    =   std::get<double>(cf.get("temperature"));
@@ -90,30 +87,34 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         auto sig            =   std::get<double>(cf.get("sig"));
         auto amp            =   std::get<double>(cf.get("amp"));
         auto length         =   std::get<double>(cf.get("length"));
-        
+      
         auto start = std::chrono::high_resolution_clock::now();
-        if(path!=tmpfile || nparticles!=tmpparticles || group!=tmpgroup){
-            tmpfile=path;
-            if(tmpfile==DEFAULT_PATH) data_dinit=loaddata::getDummy(nparticles,length,group);
-            else data_dinit=loaddata::loadfile(tmpfile,group);
-        }
         
-        //create running state
-
-        if(nparticles==0 || nparticles>data_dinit.size()) nparticles=data_dinit.size();
-
-        //create running state
-        RunningState_t data_d(nparticles,RunningTuple_init); // running state
-        data_d.reserve(nparticles);
+	//selects which deposit kind will be generated    
+	RunningStateHost_t data_dinit;
+        if(path==DEFAULT_PATH){ 
+	  data_dinit = loaddata::getDummy(std::get<size_t>(cf.get("nparticles")),std::get<double>(cf.get("length")),std::get<size_t>(cf.get("group")));
+	}
+	else{ 
+	  data_dinit = loaddata::loadfile(path,group,custom);
+	}
+	nparticles=(data_dinit.size());
+	//sets number of total particles
+        
+	        
+	
+        RunningState_t data_d((nparticles)/group,RunningTuple_init); // running state
+        data_d.reserve((nparticles)/group);
         //create reduced vector for plotting
         ReducedDataDev_t currents(nsteps);
         currents.reserve(nsteps);
         CurrentVec_t tp_currs;
-        
-        
+       
         //fill running state with initial particles
-        hydra::copy(hydra::make_range(data_dinit.begin(),data_dinit.begin()+nparticles),data_d); // with ranges
+        hydra::copy(hydra::make_range(data_dinit.begin(),data_dinit.begin()+((nparticles)/group)),data_d); // with ranges
+//         hydra::copy(hydra::make_range(data_dinit.begin(),data_dinit.begin()+((nparticles*2)/group)),data_d); // with ranges
 
+	
         hydra::for_each(data_d, loaddata::Translate(xshift,yshift,zshift,std::get<0>(_maps.Boundaries()),std::get<1>(_maps.Boundaries()),
                                                                     std::get<2>(_maps.Boundaries()),std::get<3>(_maps.Boundaries()),
                                                                     std::get<4>(_maps.Boundaries()),std::get<5>(_maps.Boundaries())));
@@ -121,18 +122,21 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         //creating large host vector to copy bunches of dev vectors
         size_t stp=1;
         if(extrainfo || plot) stp=nsteps;
-        UniverseHost_t states_host(stp, StateHost_t(nparticles,StateTuple_init));
+        UniverseHost_t states_host(stp, StateHost_t((nparticles*2)/group,StateTuple_init));
         states_host.reserve(stp);
         for(auto& st:states_host){
-            st.reserve(nparticles);
+            st.reserve((nparticles*2)/group);
         }
         
         size_t nbunches = nsteps/bunchsize;
         size_t rest = nsteps%bunchsize;
         
         INFO_LINE("Simulation "<<sim<<" ("<<nickname<<")")
-        if(group>1) INFO_LINE("Particles are grouped in "<< nparticles <<" bunches of "<<group);
-        INFO_LINE("Nparticles(dep. charge): "<<nparticles*group<<"("<< (double)(nparticles*group)*HCHARGE/2. <<" C)"<< ", Temperature "<< temperature << ", timestep "<<timestep)
+//         INFO_LINE("Total moving particles (dep. charge): "<<nparticles*2<<"("<< (double)(nparticles)*HCHARGE <<" C)"<< ", Temperature "<< temperature << ", timestep "<<timestep)
+//         if(group>1) INFO_LINE("Particles are grouped in "<< (nparticles*2)/group <<" bunches of "<<group<< " particles each");
+        INFO_LINE("Total electron/hole pairs: "<<nparticles/2<<" Total moving particles: "<< nparticles<<" Expected integrated charge: "<<(double)(nparticles/2)*HCHARGE<<"\n")
+        INFO_LINE("Temperature "<< temperature << ", timestep "<<timestep)
+	if(group>1) INFO_LINE("Particles are grouped in "<< (nparticles)/group <<" bunches of "<<group<< " particles each");
         INFO_LINE("Nsteps: "<<nsteps)
 //         if(ampexp[sim]!=0.0) INFO_LINE("Amp_exp "<< cf.get("amp").getd() << ", Sigma_exp "<<cf.get("sig").getd())
         if(xshift!=0.0) INFO_LINE("shifted in x by "<<xshift<< " micron")
@@ -140,20 +144,37 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         if(zshift!=0.0) INFO_LINE("shifted in z by "<<zshift<< " micron")
         if((extrainfo || plot)) INFO_LINE("Requested "<<nsteps<< " steps. Dividing into "<< nbunches << " bunches of "<<bunchsize<<" steps plus one of "<< rest << " steps")
         
-    
-        hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
+        
+        auto A = hydra::Parameter::Create().Name("A").Value(0.0);
+        auto B = hydra::Parameter::Create().Name("B").Value(PI);
+        auto C = hydra::Parameter::Create().Name("C").Value(2*PI);
+        
+        auto uniform_theta   = hydra::UniformShape<double>(A,B);
+        auto uniform_phi   = hydra::UniformShape<double>(A,C);
+        
+        auto mean  = hydra::Parameter::Create("mean" ).Value(0.0);
+        auto sigma = hydra::Parameter::Create("sigma").Value(1.0);
+        
+        auto gauss     = hydra::Gaussian<double>(mean, sigma);
+        
+//         hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
         
         
         size_t niter=0;
         //creating running vectors of states and reserving memory for them and their elements
         size_t bnc=1;
+//         if((extrainfo || plot)) bnc=bunchsize; 
+//         UniverseDev_t states(bnc, StateDev_t((nparticles*2)/group,StateTuple_init));
+//         states.reserve(bnc);
+//         for(auto& final_state:states){
+//             final_state.reserve((nparticles*2)/group);
+//         }
         if((extrainfo || plot)) bnc=bunchsize; 
-        UniverseDev_t states(bnc, StateDev_t(nparticles,StateTuple_init));
+        UniverseDev_t states(bnc, StateDev_t((nparticles)/group,StateTuple_init));
         states.reserve(bnc);
         for(auto& final_state:states){
-            final_state.reserve(nparticles);
+            final_state.reserve((nparticles)/group);
         }
-        
         size_t cb=0; //count bunches
         
         {
@@ -161,15 +182,11 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
             //for loop on all states in the universe
             if(_maps.ismulti()){
                 for(size_t id=0; id<=nsteps; id++){
-                    double temperature_nmob = (((KB*temperature))/HCHARGE)*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
+                    double temperature_nmob = (((KB*temperature))/(HCHARGE*group))*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
                     
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
-                    
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
+                    hydra::fill_random(data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x) , gauss,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1) , uniform_phi,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2) , uniform_theta,std::rand());
                     
                     
                     hydra::for_each(data_d, evolve::make_RamoCurrent(niter,
@@ -184,9 +201,9 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                     
 //                     auto int_curr = hydra::reduce ( hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)) | (analysis::_SelectChargeAndSec), ReducedTuple_init,analysis::_SumTuples);
 //                     auto int_curr = hydra::reduce ( hydra::transform (hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)), analysis::SelectChargeAndSec()), ReducedTuple_init,analysis::SumTuples());
-                    auto int_curr=HYDRA_EXTERNAL_NS::thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
+                    auto int_curr=hydra_thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
                     tp_currs.push_back(int_curr);
-                    
+// 		    INFO_LINE(_maps.VecXEField()<<" "<< _maps.VecYEField()<<" "<< _maps.VecZEField()<<" "<< _maps.EField()<<" "<<_maps.VecXEMob()<<" "<< _maps.VecYEMob()<<" "<< _maps.VecZEMob()<<" "<< _maps.EMob()<<" "<<_maps.VecXHMob()<<" "<< _maps.VecYHMob()<<" "<< _maps.VecZHMob()<<" "<< _maps.HMob()<<" "<<_maps.VecXWField()<<" "<< _maps.VecYWField()<<" "<< _maps.VecZWField()<<" "<< _maps.WField())
 //                     auto int_curr=hydra::reduce(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),ReducedTuple_init, analysis::SumCarriers());
 //                     
                     if(extrainfo || plot){
@@ -218,16 +235,11 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
             }
             else{
                 for(size_t id=0; id<=nsteps; id++){
-                    double temperature_nmob = (((KB*temperature))/HCHARGE)*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
+                    double temperature_nmob = (((KB*temperature))/(HCHARGE*group))*(1 + amp*exp(-0.5*pow((timestep*niter - sig)/sig,2)));
                     
-                    Generator.SetSeed(std::rand());
-                    Generator.Gauss(0.0, 1.0, data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x));
-                    
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, 2*PI, data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1));
-                    Generator.SetSeed(std::rand());
-                    Generator.Uniform(0.0, PI, data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2));
-                    
+                    hydra::fill_random(data_d.begin(_tc_gauss_x), data_d.end(_tc_gauss_x) , gauss,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_1), data_d.end(_tc_angle_1) , uniform_phi,std::rand());
+                    hydra::fill_random(data_d.begin(_tc_angle_2), data_d.end(_tc_angle_2) , uniform_theta,std::rand());
                     
                     hydra::for_each(data_d, evolve::make_RamoCurrent(niter,
                                                                     timestep,
@@ -238,7 +250,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
 //                     auto int_curr = hydra::reduce ( hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)) | (analysis::_SelectChargeAndSec), ReducedTuple_init,analysis::_SumTuples);
 // //                     auto int_curr = hydra::reduce ( hydra::transform(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),analysis::SelectChargeAndSec()), ReducedTuple_init,analysis::SumTuples());
 // //                     auto r = reduce ( transform (data, functorT), init, functorR)
-                    auto int_curr=HYDRA_EXTERNAL_NS::thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
+                    auto int_curr=hydra_thrust::transform_reduce(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec),analysis::SelectChargeAndSec(), ReducedTuple_init,analysis::SumTuples());
                     
 //                     auto int_curr=hydra::reduce(hydra::make_range(data_d.begin(_tc_charge,_tc_isin,_tc_curr,_tc_issec),data_d.end(_tc_charge,_tc_isin,_tc_curr,_tc_issec)),ReducedTuple_init,analysis::SumCarriers());
                     
@@ -251,7 +263,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
                             cb++;
                         }
                     }
-                    
+                    INFO_LINE(int_curr);
                     printProgress((double)(niter+1)/(double)nsteps,"Simulation progress:");
                     
                     
@@ -271,7 +283,6 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
             }
         }
         
-        //information about process time
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> elapsed = end - start;
         std::cout << std::endl;
@@ -283,7 +294,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         std::map<std::string,std::string> settings;
         settings["name"]=nickname;
         settings["outputdir"]=outputdir;
-        settings["pairs"]=Form("%i",(int)nparticles/2);
+        settings["pairs"]=Form("%i",(int)(nparticles)/(group));
         settings["timestep"]=Form("%g s",timestep);
         settings["nstep"]=Form("%i s",(int)nsteps);
         settings["T"]=Form("%0.0f K",temperature);
@@ -292,13 +303,11 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         settings["x shift"]=Form("%g #mu m",xshift);
         settings["y shift"]=Form("%g #mu m",yshift);
         settings["z shift"]=Form("%g #mu m",zshift);
-        
         if(!(extrainfo || plot)) analysis::AnalyseSim(tp_currs,timestep,settings);
         else{
             analysis::AnalyseSim(tp_currs,timestep,settings);
             analysis::ExtraPlots(states_host, tp_currs, h3, timestep, settings, extrainfo, plot);
         }
-        
         
     }
         sim++;

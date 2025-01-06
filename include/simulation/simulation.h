@@ -23,6 +23,8 @@
  *
  *  Created on: 13/01/2019
  *  Author: Andrea Contu
+ *  Updated on: 15/01/2024
+ *  Author: Angelo Loi
  */
 
 #ifndef __SIMULATION_H__
@@ -41,6 +43,7 @@ namespace sim{
         size_t _nparticles;
         size_t _nsteps;
         std::string _path;
+	std::string _custom;
         std::string _nickname;
         bool _plot;
         bool _extrainfo;
@@ -65,6 +68,7 @@ namespace sim{
             _nparticles     =   std::get<size_t>(cf.get("nparticles"));
             _nsteps         =   std::get<size_t>(cf.get("nsteps"));
             _path           =   std::get<std::string>(cf.get("path"));
+            _custom         =   std::get<std::string>(cf.get("customdeposit")); //<-- extra
             _nickname       =   std::get<std::string>(cf.get("nickname"));
             _plot           =   std::get<bool>(cf.get("plot"));
             _extrainfo      =   std::get<bool>(cf.get("extrainfo"));
