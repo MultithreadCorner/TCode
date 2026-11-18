@@ -1,5 +1,5 @@
 ### CMakeList for TCoDe
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10...3.28)
 
 # project name
 project(TCoDe)
@@ -16,7 +16,7 @@ SET(CMAKE_VERBOSE_MAKEFILE  ON)
 
 #check if compiler is C++14 compliant
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("--std=c++14" COMPILER_SUPPORTS_CXX14)
+CHECK_CXX_COMPILER_FLAG("--std=c++17" COMPILER_SUPPORTS_CXX14)
 if(NOT COMPILER_SUPPORTS_CXX14)
  message(FATAL "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
 endif()
@@ -25,17 +25,17 @@ endif()
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
  MESSAGE(STATUS "Setting Clang flags")
- set(CMAKE_CXX_FLAGS " --std=c++14 -W -march=native -fPIC -O3 -ldl" CACHE STRING "compile flags" FORCE)
+ set(CMAKE_CXX_FLAGS " --std=c++17 -W -march=native -fPIC -O3 -ldl" CACHE STRING "compile flags" FORCE)
   
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
  MESSAGE(STATUS "Setting GCC flags")
- set(CMAKE_CXX_FLAGS " --std=c++14 -W -march=native -fPIC -O4 -ldl" CACHE STRING "compile flags" FORCE)
+ set(CMAKE_CXX_FLAGS " --std=c++17 -W -march=native -fPIC -O4 -ldl" CACHE STRING "compile flags" FORCE)
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
  
  MESSAGE(STATUS "Setting ICC flags")
- set(CMAKE_CXX_FLAGS " --std=c++14 -W -march=native -fPIC -O4 -ldl" CACHE STRING "compile flags" FORCE)
+ set(CMAKE_CXX_FLAGS " --std=c++17 -W -march=native -fPIC -O4 -ldl" CACHE STRING "compile flags" FORCE)
   
 #elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
  #MESSAGE(STATUS "===> Compiling with MSVC")
@@ -59,17 +59,20 @@ include_directories(${TCLAP_INCLUDE_DIR})
 # get ROOT
 find_package(ROOT COMPONENTS Minuit2 TreePlayer)
 if(ROOT_FOUND)
-include_directories(${ROOT_INCLUDE_DIR})
-link_directories(${ROOT_LIBRARY_DIR})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_ROOT_AVAILABLE_")
-if(${ROOT_Minuit2_LIBRARY} MATCHES "libMinuit2.so")
-set(Minuit2_FOUND ON)
-else(Minuit2_FOUND OFF)
-endif()
+  list(FILTER ROOT_LIBRARIES EXCLUDE REGEX "lib(Thread|Imt)\\.so")
+  include_directories(${ROOT_INCLUDE_DIR})
+  link_directories(${ROOT_LIBRARY_DIR})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_ROOT_AVAILABLE_")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed -Wl,--allow-shlib-undefined")
+  if("${ROOT_Minuit2_LIBRARY}" MATCHES "libMinuit2.so")
+    set(Minuit2_FOUND ON)
+  else()
+    set(Minuit2_FOUND OFF)
+  endif()
 endif(ROOT_FOUND)
 
 #get CUDA
-find_package(CUDA 8.0) 
+find_package(CUDA 8.0)
 if(CUDA_FOUND)
 link_directories( ${CUDA_TOOLKIT_ROOT_DIR}/lib64/)
 
@@ -98,12 +101,13 @@ LIST(APPEND CUDA_NVCC_FLAGS ${NVCC_FLAGS_EXTRA})
         
 endif(CUDA_FOUND)
 
-#get TBB
-find_package(TBB )
+find_package(TBB CONFIG QUIET)
 if(TBB_FOUND)
-include_directories(${TBB_INCLUDE_DIRS})
-link_directories(${TBB_LIBRARY})
-endif(TBB_FOUND)
+  set(TBB_INCLUDE_DIRS "/usr/include")
+  set(TBB_LIBRARIES TBB::tbb)
+else()
+  find_package(TBB)
+endif()
 
 #get OpenMP
 find_package(OpenMP)

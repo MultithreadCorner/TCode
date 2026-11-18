@@ -294,7 +294,7 @@ void signal_simulation(cfg::Setting const& root, int icfg=-1){
         std::map<std::string,std::string> settings;
         settings["name"]=nickname;
         settings["outputdir"]=outputdir;
-        settings["pairs"]=Form("%i",(int)(nparticles)/(group));
+        settings["pairs"]=Form("%i",(nparticles/group));
         settings["timestep"]=Form("%g s",timestep);
         settings["nstep"]=Form("%i s",(int)nsteps);
         settings["T"]=Form("%0.0f K",temperature);

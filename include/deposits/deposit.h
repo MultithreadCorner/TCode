@@ -24,6 +24,7 @@
  *  Created on: 13/01/2019
  *  Author: Andrea Contu
  */
+#include <hydra/Random.h>
 
 #ifndef __DEPOSIT_H__
 #define __DEPOSIT_H__
@@ -107,7 +108,8 @@ namespace deposit{
         //generate dummy deposit
         void gendummy(size_t nparticles, double length, size_t group=DEFAULT_GROUP){
             INFO_LINE("Generating deposit")
-            hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
+            std::mt19937_64 Generator(std::chrono::system_clock::now().time_since_epoch().count());
+            // hydra::Random<> Generator( std::chrono::system_clock::now().time_since_epoch().count());
             size_t np=(nparticles<=0) ? MAXPARTICLES : nparticles;
             if(np==1){
                 _data=RunningStateHost_t(np,RunningTuple_t(std::copysign(1.,length),0.,0.,0., 0.,1.,0.,0.,0.,0.,0.,0.));
@@ -120,17 +122,23 @@ namespace deposit{
             
             //distribute them randomly in a line along Z
             if(length>0.){
-                int seed=0;
-                Generator.SetSeed(seed); // IMPORTANT, otherwise the seed stays the same
-                Generator.Uniform(0., length, data_de.begin(_tc_z), data_de.end(_tc_z));
-                Generator.SetSeed(seed);
-                Generator.Uniform(0., length, data_dh.begin(_tc_z), data_dh.end(_tc_z));
+                unsigned int seed = 0;
+                std::mt19937_64 gen_e(seed);
+                std::mt19937_64 gen_h(seed);
+                std::uniform_real_distribution<double> dist(0., length);
+
+                for (auto& z : hydra::make_range(data_de.begin(_tc_z), data_de.end(_tc_z))) {
+                    z = dist(gen_e);
+                }
+                for (auto& z : hydra::make_range(data_dh.begin(_tc_z), data_dh.end(_tc_z))) {
+                    z = dist(gen_h);
+                }
             }
             hydra::copy(data_de,hydra::make_range(_data.begin(),_data.begin()+halfsize));
             hydra::copy(data_dh,hydra::make_range(_data.begin()+halfsize,_data.end()));
-            
+
         }
-        
+
         //get deposit
         RunningStateHost_t getdata(){return _data;}
         
