@@ -10,7 +10,28 @@ TCode is still in its alpha version and the repository it is taking shape, for t
 TCode uses external 3D maps of electric fields, carrier mobilities and weighting field and energy deposit to simulate the response in current of solid state sensors. The motion of the individual carriers produced in the initial deposit is determined using a 4th other Runge-Kutta using the electric field and the mobilities and assuming that the carriers always move at drift velocity. At each time interval the current induced in the electrod is calculated from the carriers velocity using the corresponding weighting field, according to the [Shockley](https://aip.scitation.org/doi/10.1063/1.1710367)-[Ramo](https://ieeexplore.ieee.org/document/1686997) theorem. The output is stored to ROOT files, several level of output detail are available, from the simple current vs time plot to the complete information about the position of the carriers at each time step.
 
 ## Dependencies
-TCode depends on [ROOT >= v.6.14](https://github.com/root-project/root), [libconfig >= v1.5](https://hyperrealm.github.io/libconfig/), [TCLAP >= v1.2.1](http://tclap.sourceforge.net/) and optionally  [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) (needed for nVidia GPUs).
+
+### Required
+* **C++ Compiler** with C++14/C++17 support (e.g., `GCC` or `Clang`)
+* **[CMake](https://cmake.org/)** (`>= v3.10`) and `make`
+* **[Hydra](https://github.com/MultithreadCorner/Hydra)**: header-only parallel computing framework (downloaded separately; its path is passed to CMake via `-DHYDRA_INCLUDE_DIR`)
+* **[ROOT](https://github.com/root-project/root)** (`>= v6.14`, built with `Minuit2` and `TreePlayer` components)
+* **[libconfig](https://hyperrealm.github.io/libconfig/)** (`>= v1.5`, development headers `libconfig++-dev`)
+* **[TCLAP](http://tclap.sourceforge.net/)** (`>= v1.2.1`, development headers `libtclap-dev`)
+
+### Parallel Backends & Optional Tools
+* **OpenMP** (`libgomp`, included with GCC): required to build `*_omp` multi-threaded CPU targets
+* **[Intel TBB / oneTBB](https://github.com/oneapi-src/oneTBB)** (`libtbb-dev`): required to build `*_tbb` targets *(Note: if using a precompiled ROOT binary linked against legacy TBB 2, `libtbb.so.2` must be available in your library path)*
+* **[CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)** (`>= v10.0`): required to build `*_cuda` targets for NVIDIA GPUs (with a [compatible GCC version](https://docs.nvidia.com/cuda/))
+* **[Gnuplot](http://www.gnuplot.info/)** (`gnuplot` / `gnuplot-qt`): required when setting `plot = true` in the configuration file to generate animations and signal plots
+* **[Doxygen](https://www.doxygen.nl/)**: optional, only needed if `-DBUILD_DOCUMENTATION=ON` is enabled
+
+#### Quick install on Ubuntu / Debian
+Aside from **Hydra** and **ROOT**, system dependencies can be installed via `apt`:
+```bash
+sudo apt update && sudo apt install -y build-essential cmake libconfig++-dev libtclap-dev libtbb-dev gnuplot-qt
+
+
 
 ## Build application
 To generate executables to run on nVidia GPUs you also need an installation of [CUDA >= 10.0](https://developer.nvidia.com/cuda-toolkit) and to use a [compatible GCC version](https://docs.nvidia.com/cuda/).
