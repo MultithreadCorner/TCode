@@ -28,8 +28,8 @@ TCode uses external 3D maps of electric fields, carrier mobilities and weighting
 
 #### Quick install on Ubuntu / Debian
 Aside from **Hydra** and **ROOT**, system dependencies can be installed via `apt`:
-```bash
-sudo apt update && sudo apt install -y build-essential cmake libconfig++-dev libtclap-dev libtbb-dev gnuplot-qt
+bash
+`sudo apt update && sudo apt install -y build-essential cmake libconfig++-dev libtclap-dev libtbb-dev gnuplot-qt`
 
 
 
