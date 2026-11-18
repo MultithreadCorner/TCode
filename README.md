@@ -23,7 +23,6 @@ TCode uses external 3D maps of electric fields, carrier mobilities and weighting
 * **OpenMP** (`libgomp`, included with GCC): required to build `*_omp` multi-threaded CPU targets
 * **[Intel TBB / oneTBB](https://github.com/oneapi-src/oneTBB)** (`libtbb-dev`): required to build `*_tbb` targets *(Note: if using a precompiled ROOT binary linked against legacy TBB 2, `libtbb.so.2` must be available in your library path)*
 * **[CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)** (`>= v10.0`): required to build `*_cuda` targets for NVIDIA GPUs (with a [compatible GCC version](https://docs.nvidia.com/cuda/))
-* **[Gnuplot](http://www.gnuplot.info/)** (`gnuplot` / `gnuplot-qt`): required when setting `plot = true` in the configuration file to generate animations and signal plots
 * **[Doxygen](https://www.doxygen.nl/)**: optional, only needed if `-DBUILD_DOCUMENTATION=ON` is enabled
 
 #### Quick install on Ubuntu / Debian
